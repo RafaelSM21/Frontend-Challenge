@@ -1,0 +1,21 @@
+
+node_modules/
+dist/
+.vercel/
+*.local
+
+# Variáveis de ambiente
+.env
+.env.*
+!.env.example
+
+# Arquivos temporários e gerados
+.tanstack/tmp/
+playwright-report/
+test-results/
+reports/lighthouse/
+reports/lighthouse.zip
+
+# Sistema operacional
+.DS_Store
+Thumbs.db

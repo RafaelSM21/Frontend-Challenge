@@ -1,0 +1,13 @@
+ATUALIZACAO CUMULATIVA — merge de carrinho e estados de pedido
+
+Extraia em D:\Projetos\NFT aceitando substituir arquivos e execute:
+  npm run typecheck
+  npm run lint
+  npm run test:e2e
+
+Novos cenarios por ?mockScenario=:
+- payment-declined: pedido recusado, com carrinho e estoque preservados;
+- order-pending: pedido pendente recuperavel apos refresh;
+- timeout-after-order: pedido criado, mas primeira resposta atrasa alem do timeout. Repetir com a mesma chave recupera o mesmo pedido.
+
+O login/cadastro agora combina o carrinho do visitante com o carrinho remoto.
