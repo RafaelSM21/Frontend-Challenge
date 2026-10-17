@@ -6,10 +6,20 @@ import type { Order, OrderStatus } from "@/lib/contracts";
 // O MSW remove o prefixo /socket.io/ do handshake antes de comparar handlers.
 // Por isso os canais devem apontar para a origem, embora o cliente continue
 // usando o path Socket.IO padrão (/socket.io).
-const channels = [
-  ws.link("ws://localhost:5173"),
-  ws.link("ws://localhost:4173"),
-];
+
+const currentSocketOrigin =
+  typeof window === "undefined"
+    ? undefined
+    : window.location.origin.replace(/^http/, "ws");
+
+const socketOrigins = new Set([
+  ...(currentSocketOrigin ? [currentSocketOrigin] : []),
+  "ws://localhost:5173",
+  "ws://localhost:4173",
+]);
+
+const channels = [...socketOrigins].map((origin) => ws.link(origin));
+
 type MockSocketClient = {
   io: ReturnType<typeof toSocketIo>;
   close: () => void;
