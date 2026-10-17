@@ -100,7 +100,11 @@ function HomePage() {
   );
   const priceRangeStart = ((minimumPriceValue - 0.02) / 12.28) * 100;
   const priceRangeEnd = ((maximumPriceValue - 0.02) / 12.28) * 100;
-  const featuredNft = query.data?.items[6] ?? query.data?.items[0];
+  const catalogItems = Array.isArray(query.data?.items)
+    ? query.data.items
+    : [];
+
+  const featuredNft = catalogItems[6] ?? catalogItems[0];
 
   return (
     <div className="site-wrap">
