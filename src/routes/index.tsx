@@ -121,7 +121,7 @@ function HomePage() {
       <section className="hero container">
         <div className="hero-copy">
           <div className="eyebrow">
-            <span className="eyebrow-line" /> MARKETPLACE DE BEM-VINDO À KURIO
+            <span className="eyebrow-line" /> BEM-VINDO À KURIO
           </div>
           <h1>
             SEJA DONO DO FUTURO
@@ -134,7 +134,7 @@ function HomePage() {
           </p>
           <Button asChild className="button button-primary">
             <a href="#catalogo">
-              EXPLORAR COLEÇÃO <span aria-hidden="true">↗</span>
+              EXPLORAR <span aria-hidden="true">↗</span>
             </a>
           </Button>
           <div className="hero-stats">

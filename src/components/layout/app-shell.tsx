@@ -358,6 +358,14 @@ export function AppShell() {
               análises do mercado.
             </p>
           </article>
+          <article className="footer-newsletter">
+            <h3>Antecipe-se ao próximo lançamento</h3>
+            <form onSubmit={(event) => event.preventDefault()}>
+              <input type="email" aria-label="Seu e-mail" placeholder="digite seu e-mail..." />
+              <button type="submit">Enviar</button>
+            </form>
+            <p>Receba lançamentos selecionados, histórias de criadores e novidades do mercado.</p>
+          </article>
         </div>
 
         <div className="footer-contact">
@@ -403,8 +411,16 @@ export function AppShell() {
               </Link>
             ))}
           </div>
-          <div>
-            <h3>Carteiras compatíveis</h3>
+          <div className="footer-community">
+            <h3>Redes sociais</h3>
+            <div className="footer-socials" aria-label="Redes sociais">
+              <span className="footer-social-mark footer-social-facebook" aria-label="Facebook">f</span>
+              <span className="footer-social-mark footer-social-instagram" aria-label="Instagram">◎</span>
+              <span className="footer-social-mark footer-social-twitter" aria-label="Twitter">𝕏</span>
+              <span className="footer-social-mark footer-social-linkedin" aria-label="LinkedIn">in</span>
+              <span className="footer-social-mark footer-social-youtube" aria-label="YouTube">▶</span>
+            </div>
+            <h3 className="wallets-title">Carteiras compatíveis</h3>
             <div className="wallet-badges">
               <span>METAMASK</span>
               <span>WALLETCONNECT</span>

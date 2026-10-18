@@ -2,7 +2,12 @@
 
 Aplicação de demonstração de um marketplace de NFTs construída com React e TypeScript, baseada no desafio de frontend e no layout do [Figma](https://www.figma.com/design/Ff0SksUi7UFtPWUO8kyNtw/Frontend-Challenge?node-id=0-1).
 
-O projeto implementa catálogo, busca e filtros, detalhe do NFT, favoritos, carrinho, checkout simulado, pedidos, conta do colecionador e atualizações em tempo real simuladas. **Não realiza transações em blockchain, não conecta carteiras reais e não processa pagamentos reais.** O modo de demonstração usa MSW para simular REST e Socket.IO, sem depender de backend privado.
+**Demo pública:** https://frontend-challenge-kappa-two.vercel.app/perfil  
+**Repositório:** https://github.com/RafaelSM21/Frontend-Challenge
+
+O projeto implementa catálogo, busca e filtros, detalhe do NFT, favoritos, carrinho, checkout simulado, pedidos, conta do colecionador e atualizações em tempo real simuladas.
+
+**Importante:** não realiza transações em blockchain, não conecta carteiras reais e não processa pagamentos reais. O modo de demonstração usa MSW para simular REST e Socket.IO, sem depender de backend privado.
 
 ## Requisitos
 
@@ -57,7 +62,7 @@ Não coloque chaves, senhas reais ou outros segredos em variáveis `VITE_*`: ela
 - **Carrinho e checkout:** alteração de quantidades, remoção, cupom demonstrativo, seleção de carteira/rede simuladas, cotação e envio de pedido simulado.
 - **Conta:** login, cadastro, perfil e carteiras fictícias; os dados do mock são separados por usuário.
 - **Tempo real:** o cliente usa `socket.io-client`; no modo de demonstração, os eventos são simulados por MSW, não por um servidor Socket.IO público.
-- **Páginas auxiliares:** Suporte guarda solicitações no `localStorage` deste navegador e não as envia a uma central real. Ofertas e cupom são demonstrativos. Atividade e Downloads não representam um histórico de backend. Consulte `ARCHITECTURE.md` para limitações e decisões adicionais.
+- **Páginas auxiliares:** Suporte guarda solicitações no `localStorage` deste navegador e não as envia a uma central real. Ofertas e cupons são demonstrativos. Atividade e Downloads não representam um histórico de backend. Consulte `ARCHITECTURE.md` para limitações e decisões adicionais.
 
 ## Mocks, cenários e reset
 
@@ -81,8 +86,8 @@ O cenário `slow-network` atrasa respostas do catálogo, carrinho e cotação pa
 ## Comandos
 
 ```bash
-npm run dev                # Desenvolvimento com mocks
-npm run build              # Verificação de tipos + build de demonstração
+npm run dev               # Desenvolvimento com mocks
+npm run build             # Verificação de tipos + build de demonstração
 npm run preview            # Servir o build localmente na porta 4173
 npm run typecheck          # Verificação TypeScript
 npm run lint               # ESLint
@@ -108,28 +113,35 @@ Os testes E2E usam um worker porque compartilham um banco mock persistido. Em ca
 - Quando a sessão expira, a rota de origem é preservada e retomada após novo login.
 - O carrinho de visitante é mesclado à conta após autenticação.
 - Preço e disponibilidade são tratados como strings decimais; a cotação do mock é a referência para a criação do pedido.
-- O checkout persiste a chave de idempotência, a carteira e a cotação. Se o pedido for criado mas a resposta sofrer timeout, repetir a operação ou recarregar recupera o mesmo pedido sem duplicar a compra.
-- Eventos `nft.updated` e `order.updated` carregam identificadores/versões; eventos duplicados ou antigos são descartados, e os dados relevantes são reconciliados após eventos ou reconexão.
+- O checkout persiste a chave de idempotência, a carteira e a cotação. Se o pedido for criado, mas a resposta sofrer timeout, repetir a operação ou recarregar recupera o mesmo pedido sem duplicar a compra.
+- Eventos `nft.updated` e `order.updated` carregam identificadores e versões; eventos duplicados ou antigos são descartados, e os dados relevantes são reconciliados após eventos ou reconexão.
 
-Os contratos REST e de eventos, a política de sessão, o estado do carrinho, a estratégia de cache e a reconciliação REST/Socket.IO estão descritos em [ARCHITECTURE.md](./ARCHITECTURE.md).
+Os contratos REST e de eventos, a política de sessão, o estado do carrinho, a estratégia de cache e a reconciliação REST/Socket.IO estão descritos em [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
 ## Auditoria e estado de performance
 
-A auditoria Lighthouse registrada em 18/10/2026 está em [docs/AUDITORIA.md](./docs/AUDITORIA.md), com medianas de três execuções por página/perfil e relatórios HTML/JSON em `reports/lighthouse/`.
+A auditoria Lighthouse registrada em 18/10/2026 está em [`docs/AUDITORIA.md`](./docs/AUDITORIA.md), com medianas de três execuções por página/perfil e relatórios HTML/JSON em `reports/lighthouse/`.
 
-- Desktop: Performance 99 nas páginas Início e Detalhe.
-- Mobile: Performance 82 no Início e 84 no Detalhe; **a meta definida no desafio é 90 e ainda não foi atingida**.
-- Accessibility, Best Practices e SEO: 100 em todas as combinações medidas.
+- **Desktop:** Performance 99 nas páginas Início e Detalhe.
+- **Mobile:** Performance 82 no Início e 84 no Detalhe. A meta definida no desafio é 90 e ainda não foi atingida.
+- **Accessibility, Best Practices e SEO:** 100 em todas as combinações medidas.
 
-Os valores podem variar conforme ambiente e devem ser atualizados após novas medições. A auditoria documenta o diagnóstico de LCP mobile e as próximas otimizações a validar.
+Os valores podem variar conforme o ambiente e devem ser atualizados após novas medições. A auditoria documenta o diagnóstico de LCP mobile e as próximas otimizações a validar.
 
 ## Deploy
 
-A configuração `vercel.json` encaminha as rotas da SPA para `index.html` para permitir acesso direto e refresh. Para publicar, use o build de demonstração com mocks habilitados e confirme que `mockServiceWorker.js` está incluído no artefato. Depois do deploy, valide em uma janela anônima: carregamento inicial, refresh de rotas, login, catálogo, favorito, carrinho, checkout, confirmação/pedido pendente e pelo menos um cenário de falha.
+**A aplicação está publicada na Vercel:**
 
-O deploy público é requisito do desafio. A URL publicada deve corresponder ao commit entregue e permanecer acessível durante a avaliação. Este README não afirma que o deploy foi validado; registre aqui a URL pública e o link do repositório antes de enviar a candidatura/entrega.
+- **Demo pública:** https://frontend-challenge-kappa-two.vercel.app/perfil
+- **Repositório:** https://github.com/RafaelSM21/Frontend-Challenge
+
+A configuração `vercel.json` encaminha as rotas da SPA para `index.html` para permitir acesso direto e refresh. O build de demonstração utiliza mocks habilitados.
+
+Para a avaliação, recomenda-se abrir a aplicação em uma janela anônima e validar o carregamento inicial, a atualização de rotas, login, catálogo, favoritos, carrinho, checkout, confirmação/pedido pendente e pelo menos um cenário de falha.
+
+O deploy público é requisito do desafio. A versão publicada deve corresponder ao código entregue e permanecer acessível durante a avaliação.
 
 ## Documentação complementar
 
-- [ARCHITECTURE.md](./ARCHITECTURE.md): arquitetura, contratos, decisões de UX, limitações e desvios conhecidos.
-- [docs/AUDITORIA.md](./docs/AUDITORIA.md): resultados Lighthouse, ambiente, diagnóstico de LCP e próximos passos.
+- [`ARCHITECTURE.md`](./docs/ARCHITECTURE.md): arquitetura, contratos, decisões de UX, limitações e desvios conhecidos.
+- [`docs/AUDITORIA.md`](./docs/AUDITORIA.md): resultados Lighthouse, ambiente, diagnóstico de LCP e próximos passos.

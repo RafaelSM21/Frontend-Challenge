@@ -8185,3 +8185,187 @@ html { scroll-padding-top: 88px; }
     animation: none;
   }
 }
+
+/* Footer refinado para se aproximar da referência do Figma. */
+.site-footer {
+  background: #140d0a;
+  padding: 0 24px;
+  color: #f2ece6;
+  font-family: "DM Mono", monospace;
+}
+
+.footer-highlight,
+.footer-contact,
+.footer-links,
+.footer-copyright {
+  width: 100%;
+  max-width: 1200px;
+  box-sizing: border-box;
+}
+
+.footer-highlight {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  background: #241612;
+  border-top: 0;
+  border-bottom: 0;
+}
+
+.footer-highlight article {
+  min-width: 0;
+  min-height: 250px;
+  padding: 32px 16px 28px;
+  border-right: 1px solid #d28a4c;
+}
+
+.footer-highlight article:first-child { padding-left: 48px; }
+.footer-highlight article:last-child { border-right: 0; padding-right: 30px; }
+
+.footer-feature-icon {
+  width: 74px;
+  height: 74px;
+  margin-bottom: 13px;
+  background: #d28a4c;
+  font-family: "DM Mono", monospace;
+  font-size: 22px;
+}
+
+.footer-highlight h3 {
+  margin: 0 0 8px;
+  font-family: "DM Mono", monospace;
+  font-size: 17px;
+  line-height: 1.08;
+}
+
+.footer-highlight p {
+  margin: 0;
+  color: #cfb28c;
+  font-size: 13px;
+  line-height: 1.62;
+}
+
+.footer-newsletter { padding: 32px 30px 28px 16px !important; }
+.footer-newsletter h3 { max-width: 270px; font-size: 18px; line-height: 1.05; }
+.footer-newsletter form { display: flex; height: 41px; margin: 15px 0 13px; }
+.footer-newsletter input {
+  min-width: 0;
+  flex: 1;
+  width: 0;
+  border: 0;
+  border-radius: 5px 0 0 5px;
+  padding: 0 13px;
+  background: #38220f;
+  color: #f2ece6;
+  outline: 1px solid #55321f;
+  font: 13px "DM Mono", monospace;
+}
+.footer-newsletter input::placeholder { color: #b39463; }
+.footer-newsletter button {
+  min-width: 78px;
+  border: 0;
+  border-radius: 0 5px 5px 0;
+  background: #d28a4c;
+  color: #140d0a;
+  font: 700 16px "DM Mono", monospace;
+  cursor: pointer;
+}
+.footer-newsletter p { font-size: 12px; line-height: 1.65; }
+
+.footer-contact {
+  min-height: 88px;
+  padding: 0 32px;
+  grid-template-columns: 1.15fr 1.5fr 1.2fr 1fr;
+  background: #38220f;
+}
+.footer-contact strong { font: 700 14px "DM Mono", monospace; letter-spacing: .13em; }
+.footer-contact span { font: 13px/1.6 "DM Mono", monospace; }
+
+.footer-links {
+  min-height: 236px;
+  padding: 30px 32px 32px;
+  grid-template-columns: 1.1fr 1.1fr 1fr 1fr;
+  gap: 28px;
+  background: #241612;
+}
+.footer-links > div { min-width: 0; gap: 10px; }
+.footer-links h3 { margin: 0 0 3px; font: 700 17px/1.2 "DM Mono", monospace; }
+.footer-links a { color: #f2ece6; font: 13px/1.45 "DM Mono", monospace; text-decoration: none; }
+.footer-links a:hover { color: #e89b55; }
+.footer-socials { display: flex; flex-wrap: wrap; gap: 8px; margin: 2px 0 16px; }
+.footer-socials a {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #d28a4c;
+  border-radius: 4px;
+  color: #d28a4c;
+}
+.footer-socials svg { width: 17px; height: 17px; }
+.footer-links .wallets-title { margin: 13px 0 0; }
+.wallet-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 7px 9px;
+  border: 1px solid #55321f;
+  border-radius: 6px;
+  background: #38220f;
+  color: #d28a4c;
+  font: 700 8px "DM Mono", monospace;
+}
+.wallet-badges span + span::before { content: "•"; margin-right: 6px; color: #b39463; }
+.footer-copyright {
+  min-height: 35px;
+  padding: 8px 0 0;
+  border: 0;
+  background: #140d0a;
+  color: #f2ece6;
+  font: 12px "DM Mono", monospace;
+  text-align: center;
+}
+
+@media (max-width: 980px) {
+  .footer-highlight { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .footer-highlight article { min-height: 220px; padding: 26px 24px; }
+  .footer-highlight article:first-child { padding-left: 24px; }
+  .footer-highlight article:nth-child(2) { border-right: 0; }
+  .footer-highlight article:nth-child(3) { border-top: 1px solid #d28a4c; }
+  .footer-highlight article:nth-child(4) { border-top: 1px solid #d28a4c; }
+  .footer-contact { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; padding: 22px 24px; }
+  .footer-links { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 28px 24px; }
+}
+
+@media (max-width: 600px) {
+  .site-footer { padding: 0 12px; }
+  .footer-highlight { grid-template-columns: 1fr; }
+  .footer-highlight article,
+  .footer-highlight article:first-child,
+  .footer-highlight article:last-child { min-height: auto; padding: 22px 18px; border-right: 0; border-bottom: 1px solid #d28a4c; }
+  .footer-highlight article:nth-child(3), .footer-highlight article:nth-child(4) { border-top: 0; }
+  .footer-highlight article:last-child { border-bottom: 0; }
+  .footer-feature-icon { width: 54px; height: 54px; margin-bottom: 12px; font-size: 17px; }
+  .footer-highlight h3 { font-size: 15px; }
+  .footer-highlight p { font-size: 12px; }
+  .footer-newsletter { padding: 22px 18px !important; }
+  .footer-newsletter h3 { font-size: 17px; }
+  .footer-contact { grid-template-columns: 1fr 1fr; padding: 20px 18px; gap: 16px; }
+  .footer-contact span { font-size: 11px; }
+  .footer-links { grid-template-columns: 1fr 1fr; gap: 28px 18px; padding: 26px 18px; }
+  .footer-links h3 { font-size: 14px; }
+  .footer-links a { font-size: 12px; }
+  .footer-copyright { font-size: 10px; }
+}
+
+@media (max-width: 380px) {
+  .footer-contact, .footer-links { grid-template-columns: 1fr; }
+}
+
+/* Os ícones sociais são elementos visuais, sem destinos inventados. */
+.footer-socials span { display: grid; place-items: center; width: 32px; height: 32px; border: 1px solid #d28a4c; border-radius: 4px; color: #d28a4c; }
+.footer-socials span svg { width: 17px; height: 17px; }
+
+/* Social marks use text glyphs to avoid depending on optional lucide-react exports. */
+.footer-socials .footer-social-mark { display: grid; place-items: center; width: 32px; height: 32px; border: 1px solid #d28a4c; border-radius: 4px; color: #d28a4c; font-size: 17px; font-weight: 700; line-height: 1; }
+.footer-socials .footer-social-instagram { font-size: 23px; }
+.footer-socials .footer-social-linkedin { font-size: 13px; }
+.footer-socials .footer-social-youtube { font-size: 13px; }
