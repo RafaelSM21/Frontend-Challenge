@@ -116,11 +116,11 @@ Os testes E2E usam um worker porque compartilham um banco mock persistido. Em ca
 - O checkout persiste a chave de idempotência, a carteira e a cotação. Se o pedido for criado, mas a resposta sofrer timeout, repetir a operação ou recarregar recupera o mesmo pedido sem duplicar a compra.
 - Eventos `nft.updated` e `order.updated` carregam identificadores e versões; eventos duplicados ou antigos são descartados, e os dados relevantes são reconciliados após eventos ou reconexão.
 
-Os contratos REST e de eventos, a política de sessão, o estado do carrinho, a estratégia de cache e a reconciliação REST/Socket.IO estão descritos em [`ARCHITECTURE.md`](./ARCHITECTURE.md).
+Os contratos REST e de eventos, a política de sessão, o estado do carrinho, a estratégia de cache e a reconciliação REST/Socket.IO estão descritos em [`ARCHITECTURE.md`](./docs/ARCHITECTURE.md).
 
 ## Auditoria e estado de performance
 
-A auditoria Lighthouse registrada em 18/10/2026 está em [`docs/AUDITORIA.md`](./docs/AUDITORIA.md), com medianas de três execuções por página/perfil e relatórios HTML/JSON em `reports/lighthouse/`.
+A auditoria Lighthouse registrada em 18/10/2026 está em [`AUDITORIA.md`](./docs/AUDITORIA.md), com medianas de três execuções por página/perfil e relatórios HTML/JSON em `reports/lighthouse/`.
 
 - **Desktop:** Performance 99 nas páginas Início e Detalhe.
 - **Mobile:** Performance 82 no Início e 84 no Detalhe. A meta definida no desafio é 90 e ainda não foi atingida.
