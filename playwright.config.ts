@@ -6,6 +6,9 @@ export default defineConfig({
   // Executar cenários que chamam reset em paralelo mistura estados entre testes.
   fullyParallel: false,
   workers: 1,
+  // Baselines independentes de SO no nome do arquivo; gere e compare no mesmo ambiente.
+  snapshotPathTemplate: '{testDir}/__screenshots__/{testFileName}/{projectName}/{arg}{ext}',
+  expect: { toHaveScreenshot: { maxDiffPixelRatio: 0.01 } },
   reporter: [['html', { open: 'never' }], ['list']],
   use: { baseURL: 'http://localhost:4173', trace: 'retain-on-failure' },
   projects: [

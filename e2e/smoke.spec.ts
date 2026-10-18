@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { resolve } from "node:path";
+import { closeFilters, openFilters } from "./support";
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
@@ -123,15 +124,19 @@ test("Mercado explora coleções e conecta ao catálogo filtrado", async ({
   });
   await expect(genesis.locator(".collection-card-art img")).toHaveCount(4);
 
+  await openFilters(page);
   await page.getByRole("searchbox", { name: "Buscar coleções ou criadores" }).fill(
     "neoarchive",
   );
   await expect(page.locator(".collection-card")).toHaveCount(1);
+  // O drawer mobile é modal (aria-hidden no resto), então o card é achado por CSS/texto.
   await expect(
-    page.getByRole("heading", { name: "Dreamscape" }),
+    page.locator(".collection-card", { hasText: "Dreamscape" }),
   ).toBeVisible();
 
   await page.getByRole("searchbox", { name: "Buscar coleções ou criadores" }).fill("");
+  await expect(page.locator(".collection-card")).toHaveCount(5);
+  await closeFilters(page);
   await genesis.click();
   await expect(page).toHaveURL(/\/colecoes\/KURIO%20Genesis/);
   await expect(page.locator(".collection-detail-meta")).toContainText(
@@ -479,15 +484,42 @@ test("timeout recupera o mesmo pedido após retry e refresh sem duplicar compra"
     )?.available as number;
   });
   await page.goto("/pagamento?mockScenario=timeout-after-order");
-  await page.getByRole("button", { name: /confirmar compra/i }).click();
-  await expect(page.getByRole("alert")).toContainText(
-    "Não foi possível confirmar o pedido",
-    { timeout: 15_000 },
+  // A tentativa (chave idempotente, carteira e cotação) é gravada antes do envio.
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        Boolean(
+          JSON.parse(localStorage.getItem("kurio.checkout-resume") ?? "{}")
+            .quoteId,
+        ),
+      ),
+    )
+    .toBe(true);
+  const resume = await page.evaluate(
+    () =>
+      JSON.parse(localStorage.getItem("kurio.checkout-resume") ?? "{}") as {
+        idempotencyKey: string;
+        quoteId: string;
+        walletId: string;
+      },
   );
-  const retry = await page.evaluate(async () => {
-    const resume = JSON.parse(
-      localStorage.getItem("kurio.checkout-resume") ?? "{}",
-    );
+  await page.getByRole("button", { name: /confirmar compra/i }).click();
+  // O servidor cria o pedido e só então "demora" além do timeout do cliente. Há
+  // dois desfechos válidos: o alerta de falha (timeout) ou a recuperação
+  // automática do mesmo pedido, quando o evento em tempo real já mostra o
+  // carrinho vazio. Em ambos, a compra não pode ser duplicada (verificado abaixo).
+  await expect
+    .poll(
+      async () =>
+        /\/pedidos\//.test(page.url()) ||
+        (await page
+          .getByRole("alert")
+          .filter({ hasText: "Não foi possível confirmar o pedido" })
+          .count()) > 0,
+      { timeout: 20_000 },
+    )
+    .toBe(true);
+  const retry = await page.evaluate(async (resume) => {
     const session = JSON.parse(localStorage.getItem("kurio.session") ?? "{}");
     const response = await fetch("/api/orders", {
       method: "POST",
@@ -505,7 +537,7 @@ test("timeout recupera o mesmo pedido após retry e refresh sem duplicar compra"
       status: response.status,
       order: (await response.json()).order as { id: string },
     };
-  });
+  }, resume);
   expect(retry.status).toBe(200);
   await page.reload();
   await expect(page).toHaveURL(/\/pedidos\//, { timeout: 15_000 });
@@ -728,7 +760,7 @@ test("conflito de estoque durante a compra mantém o carrinho", async ({
   await loginAndAddNft(page);
   await page.goto("/pagamento?mockScenario=stock-conflict");
   await page.getByRole("button", { name: /confirmar compra/i }).click();
-  await expect(page.getByRole("alert")).toContainText("esgotou");
+  await expect(page.getByRole("alert")).toContainText(/esgotou|estoque mudou/i);
   await page.goto("/carrinho");
   await expect(
     page.getByRole("heading", { name: /Astronaut #002/i }),

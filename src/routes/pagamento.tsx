@@ -21,6 +21,7 @@ import {
   readCheckoutResume,
   saveCheckoutResume,
 } from "@/features/checkout/resume";
+import { CommerceSkeleton } from "@/components/layout/commerce-skeleton";
 import { getSession } from "@/features/auth/session";
 import { Button } from "@/components/ui/button";
 
@@ -68,7 +69,13 @@ function PaymentPage() {
       idempotencyKey: key,
       quoteId: quoteQuery.data?.quoteId ?? resume?.quoteId,
     });
-  }, [key, quoteQuery.data?.quoteId, resume?.quoteId, session.user.id, walletId]);
+  }, [
+    key,
+    quoteQuery.data?.quoteId,
+    resume?.quoteId,
+    session.user.id,
+    walletId,
+  ]);
   useEffect(() => {
     const quoteId = quoteQuery.data?.quoteId;
     if (quoteId && initialQuote.current && initialQuote.current !== quoteId) {
@@ -181,11 +188,7 @@ function PaymentPage() {
     cartQuery.isPending ||
     (Boolean(cartQuery.data?.items.length) && quoteQuery.isPending)
   )
-    return (
-      <section className="commerce-empty container" aria-busy="true">
-        <h1>Atualizando cotação…</h1>
-      </section>
-    );
+    return <CommerceSkeleton variant="checkout" label="Atualizando cotação…" />;
   if (isRecoveringOrder || recoveryMutation.isPending)
     return (
       <section className="commerce-empty container" aria-busy="true">
@@ -208,15 +211,21 @@ function PaymentPage() {
   const isWalletStatus =
     error === "Carteira conectada para esta compra." ||
     error === "Carteira desconectada.";
+  const walletFieldInvalid =
+    Boolean(error) &&
+    !isWalletStatus &&
+    (!walletId || Boolean(error?.startsWith("Conecte a carteira")));
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
     if (!selectedWallet) {
       setError("Selecione uma carteira cadastrada para receber seus NFTs.");
+      document.getElementById("checkout-wallet")?.focus();
       return;
     }
     if (!selectedWallet.connected) {
       setError("Conecte a carteira selecionada antes de confirmar.");
+      document.getElementById("checkout-wallet")?.focus();
       return;
     }
     if (!quoteQuery.data) {
@@ -261,7 +270,12 @@ function PaymentPage() {
               <label>
                 Carteira cadastrada
                 <select
+                  id="checkout-wallet"
                   aria-label="Carteira cadastrada"
+                  aria-invalid={walletFieldInvalid || undefined}
+                  aria-describedby={
+                    error && !isWalletStatus ? "checkout-error" : undefined
+                  }
                   value={walletId}
                   onChange={(event) => {
                     setWalletId(event.target.value);
@@ -327,6 +341,7 @@ function PaymentPage() {
           )}
           {error && (
             <p
+              id={isWalletStatus ? undefined : "checkout-error"}
               className={isWalletStatus ? "success-message" : "error-message"}
               role={isWalletStatus ? "status" : "alert"}
             >

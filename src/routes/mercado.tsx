@@ -1,15 +1,21 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowUpRight, Layers3, Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { ArrowUpRight, Layers3 } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
 import {
   getMarketCollections,
   type MarketCollection,
 } from "@/features/catalog/api";
 import { catalogCategories } from "@/lib/contracts";
-import type { Network } from "@/lib/contracts";
+import type { CatalogCategory, Network } from "@/lib/contracts";
+import {
+  FilterPanel,
+  FilterToolbar,
+} from "@/components/catalog-filters";
+import { marketSearchSchema, type MarketSearch } from "@/features/market/search";
 
 export const Route = createFileRoute("/mercado")({
+  validateSearch: marketSearchSchema,
   component: MarketPage,
 });
 
@@ -20,17 +26,31 @@ const networks: Array<{ value: Network; label: string }> = [
 ];
 const EMPTY_COLLECTIONS: MarketCollection[] = [];
 
+const NONE: never[] = [];
+
+function countBy<T>(items: T[], pick: (item: T) => string[]) {
+  const counts = new Map<string, number>();
+  for (const item of items)
+    for (const value of new Set(pick(item)))
+      counts.set(value, (counts.get(value) ?? 0) + 1);
+  return counts;
+}
+
 function MarketPage() {
-  const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("");
-  const [network, setNetwork] = useState("");
-  const [creator, setCreator] = useState("");
-  const [sort, setSort] = useState("recentes");
+  const search = Route.useSearch();
+  const navigate = useNavigate({ from: "/mercado" });
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const filtersRef = useRef<HTMLElement>(null);
   const collectionsQuery = useQuery({
     queryKey: ["market-collections"],
     queryFn: ({ signal }) => getMarketCollections(signal),
   });
   const collections = collectionsQuery.data ?? EMPTY_COLLECTIONS;
+  const updateSearch = (patch: Partial<MarketSearch>) =>
+    navigate({
+      search: (previous) => ({ ...previous, ...patch }),
+      resetScroll: false,
+    });
   const creators = useMemo(
     () =>
       Array.from(
@@ -38,8 +58,20 @@ function MarketPage() {
       ).sort(),
     [collections],
   );
+  const counts = useMemo(
+    () => ({
+      categories: countBy(collections, (item) => item.categories),
+      networks: countBy(collections, (item) => item.networks),
+      creators: countBy(collections, (item) => item.creators),
+    }),
+    [collections],
+  );
+  const sortBy = search.ordenar ?? "recentes";
+  const selectedCategories = search.categoria ?? NONE;
+  const selectedNetworks = search.rede ?? NONE;
+  const selectedCreators = search.criador ?? NONE;
   const visibleCollections = useMemo(() => {
-    const normalizedSearch = search.trim().toLocaleLowerCase();
+    const normalizedSearch = (search.q ?? "").toLocaleLowerCase();
     const filtered = collections.filter((collection) => {
       const matchesSearch =
         !normalizedSearch ||
@@ -48,15 +80,24 @@ function MarketPage() {
           .includes(normalizedSearch);
       return (
         matchesSearch &&
-        (!category || collection.categories.some((value) => value === category)) &&
-        (!network || collection.networks.some((value) => value === network)) &&
-        (!creator || collection.creators.includes(creator))
+        (selectedCategories.length === 0 ||
+          collection.categories.some((value) =>
+            selectedCategories.includes(value),
+          )) &&
+        (selectedNetworks.length === 0 ||
+          collection.networks.some((value) =>
+            selectedNetworks.includes(value),
+          )) &&
+        (selectedCreators.length === 0 ||
+          collection.creators.some((value) =>
+            selectedCreators.includes(value),
+          ))
       );
     });
 
-    if (sort === "nome") {
+    if (sortBy === "nome") {
       filtered.sort((first, second) => first.name.localeCompare(second.name));
-    } else if (sort === "quantidade") {
+    } else if (sortBy === "quantidade") {
       filtered.sort((first, second) => second.nftCount - first.nftCount);
     } else {
       filtered.sort(
@@ -66,7 +107,21 @@ function MarketPage() {
       );
     }
     return filtered;
-  }, [category, collections, creator, network, search, sort]);
+  }, [
+    collections,
+    sortBy,
+    search.q,
+    selectedCategories,
+    selectedCreators,
+    selectedNetworks,
+  ]);
+  const clearFilters = () =>
+    updateSearch({
+      q: undefined,
+      categoria: undefined,
+      rede: undefined,
+      criador: undefined,
+    });
 
   return (
     <div className="market-page">
@@ -101,81 +156,96 @@ function MarketPage() {
           )}
         </div>
 
-        {collectionsQuery.data && (
-          <div className="market-filters" aria-label="Filtros de coleções">
-            <label className="market-filter market-search">
-              <span>Buscar</span>
-              <span className="market-search-control">
-                <Search size={16} aria-hidden="true" />
-                <input
-                  type="search"
-                  aria-label="Buscar coleções ou criadores"
-                  placeholder="Coleções ou criadores..."
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                />
-              </span>
-            </label>
-            <label className="market-filter">
-              <span>Categoria</span>
-              <select
-                aria-label="Filtrar por categoria"
-                value={category}
-                onChange={(event) => setCategory(event.target.value)}
-              >
-                <option value="">Todas as categorias</option>
-                {catalogCategories.map((item) => (
-                  <option key={item.value} value={item.value}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="market-filter">
-              <span>Rede</span>
-              <select
-                aria-label="Filtrar por rede"
-                value={network}
-                onChange={(event) => setNetwork(event.target.value)}
-              >
-                <option value="">Todas as redes</option>
-                {networks.map((item) => (
-                  <option key={item.value} value={item.value}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="market-filter">
-              <span>Criador</span>
-              <select
-                aria-label="Filtrar por criador"
-                value={creator}
-                onChange={(event) => setCreator(event.target.value)}
-              >
-                <option value="">Todos os criadores</option>
-                {creators.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="market-filter market-sort">
-              <span>Ordenar</span>
-              <select
-                aria-label="Ordenar coleções"
-                value={sort}
-                onChange={(event) => setSort(event.target.value)}
-              >
-                <option value="recentes">Mais recentes</option>
-                <option value="quantidade">Mais NFTs</option>
-                <option value="nome">Nome (A–Z)</option>
-              </select>
-            </label>
-          </div>
-        )}
+        <div className="catalog-layout">
+          {collectionsQuery.data && (
+            <FilterPanel
+              id="market-filters"
+              label="Filtros de coleções"
+              panelRef={filtersRef}
+              open={filtersOpen}
+              onClose={() => setFiltersOpen(false)}
+              search={{
+                id: "market-search",
+                label: "Buscar coleções ou criadores",
+                placeholder: "Nome da coleção ou do criador...",
+                value: search.q ?? "",
+                onChange: (value) => updateSearch({ q: value || undefined }),
+              }}
+              groups={[
+                {
+                  id: "categoria",
+                  heading: "Categorias",
+                  selected: selectedCategories,
+                  onChange: (next) =>
+                    updateSearch({
+                      categoria: next.length
+                        ? (next as CatalogCategory[])
+                        : undefined,
+                    }),
+                  options: catalogCategories.map(({ value, label }) => ({
+                    value,
+                    label,
+                    count: counts.categories.get(value) ?? 0,
+                  })),
+                },
+                {
+                  id: "rede",
+                  heading: "Rede",
+                  selected: selectedNetworks,
+                  onChange: (next) =>
+                    updateSearch({
+                      rede: next.length ? (next as Network[]) : undefined,
+                    }),
+                  options: networks.map(({ value, label }) => ({
+                    value,
+                    label,
+                    count: counts.networks.get(value) ?? 0,
+                  })),
+                },
+                {
+                  id: "criador",
+                  heading: "Criador",
+                  selected: selectedCreators,
+                  onChange: (next) =>
+                    updateSearch({ criador: next.length ? next : undefined }),
+                  options: creators.map((name) => ({
+                    value: name,
+                    label: name,
+                    count: counts.creators.get(name) ?? 0,
+                  })),
+                },
+              ]}
+              onClearAll={clearFilters}
+            />
+          )}
 
+          <div className="catalog-main market-collection-results">
+            {collectionsQuery.data && (
+              <FilterToolbar
+                summary={
+                  <>
+                    <strong>{visibleCollections.length}</strong>{" "}
+                    {visibleCollections.length === 1
+                      ? "coleção encontrada"
+                      : "coleções encontradas"}
+                  </>
+                }
+                controlsId="market-filters"
+                filtersOpen={filtersOpen}
+                onToggleFilters={() => setFiltersOpen(!filtersOpen)}
+                sort={{
+                  label: "Ordenar coleções",
+                  value: sortBy,
+                  options: [
+                    { value: "recentes", label: "Mais recentes" },
+                    { value: "quantidade", label: "Mais NFTs" },
+                    { value: "nome", label: "Nome (A–Z)" },
+                  ],
+                  onChange: (value) =>
+                    updateSearch({ ordenar: value as MarketSearch["ordenar"] }),
+                }}
+              />
+            )}
         {collectionsQuery.isPending && <CollectionLoadingState />}
         {collectionsQuery.isError && (
           <div className="market-state" role="alert">
@@ -200,12 +270,7 @@ function MarketPage() {
             <button
               className="button button-outline"
               type="button"
-              onClick={() => {
-                setSearch("");
-                setCategory("");
-                setNetwork("");
-                setCreator("");
-              }}
+              onClick={clearFilters}
             >
               LIMPAR FILTROS
             </button>
@@ -213,12 +278,6 @@ function MarketPage() {
         )}
         {collectionsQuery.isSuccess && visibleCollections.length > 0 && (
           <>
-            <p className="market-result-count" role="status">
-              {visibleCollections.length}{" "}
-              {visibleCollections.length === 1
-                ? "coleção encontrada"
-                : "coleções encontradas"}
-            </p>
             <div className="collection-grid">
               {visibleCollections.map((collection) => (
                 <CollectionCard
@@ -229,6 +288,8 @@ function MarketPage() {
             </div>
           </>
         )}
+        </div>
+        </div>
       </section>
     </div>
   );

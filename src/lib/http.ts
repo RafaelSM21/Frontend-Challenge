@@ -25,10 +25,14 @@ http.interceptors.response.use(
   (error) => {
     const code = error?.response?.data?.error?.code;
     if (code === "SESSION_EXPIRED") {
-      localStorage.setItem(
-        "kurio.resume-path",
-        window.location.pathname + window.location.search,
-      );
+      // Só guarda a rota de onde a sessão expirou; requisições disparadas já
+      // em /login ou /cadastro não podem sobrescrever o ponto de retomada.
+      if (!/^\/(login|cadastro)(\/|$)/.test(window.location.pathname)) {
+        localStorage.setItem(
+          "kurio.resume-path",
+          window.location.pathname + window.location.search,
+        );
+      }
       clearSession();
       window.dispatchEvent(new Event("kurio:session-expired"));
     }

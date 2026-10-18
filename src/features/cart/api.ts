@@ -23,15 +23,18 @@ export async function getCartQuote() {
   return (await http.post<{ quote: Quote }>("/checkout/quote")).data.quote;
 }
 
-export async function addNftToServerCart(nftId: string, quantity: number) {
+export async function addNftToServerCart(
+  nftId: string,
+  editionNumber: number,
+  quantity = 1,
+) {
   const current = (await http.get<{ cart: Cart }>("/cart")).data.cart;
-  const existing = current.items.find((item) => item.nftId === nftId);
-  const items = existing
-    ? current.items.map((item) =>
-        item.nftId === nftId
-          ? { ...item, quantity: item.quantity + quantity }
-          : item,
-      )
-    : [...current.items, { nftId, quantity }];
+  const existing = current.items.find(
+    (item) => item.nftId === nftId && item.editionNumber === editionNumber,
+  );
+  if (existing) {
+    throw new Error("Esta edição já está no carrinho.");
+  }
+  const items = [...current.items, { nftId, quantity, editionNumber }];
   await http.put("/cart", { items, coupon: current.coupon });
 }

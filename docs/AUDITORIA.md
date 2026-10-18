@@ -17,4 +17,26 @@ Execução feita sobre o build de produção em modo mock, servido em `http://lo
 
 **Ambiente:** Windows 10 x64, Chrome 155 no host e Lighthouse 12.8.2. O perfil mobile emula Moto G Power (412 × 823, DPR 1,75), com throttling DevTools (CPU 4×, RTT 150 ms); o desktop usa o preset do Lighthouse. Os 12 relatórios HTML e JSON estão em [`reports/lighthouse`](../reports/lighthouse/).
 
-Os problemas de contraste, ordem dos títulos, legibilidade de texto e CLS encontrados durante a auditoria foram corrigidos. A pontuação mobile de Performance (76) e o LCP acima de 4 s continuam sendo oportunidades de otimização; o Lighthouse identifica a imagem LCP da aplicação como não descobrível no documento HTML inicial. A documentação do desafio não define uma nota mínima de aprovação.
+Os problemas de contraste, ordem dos títulos, legibilidade de texto e CLS encontrados durante a auditoria foram corrigidos.
+
+## Resultado frente às metas
+
+O enunciado (seção 10) define metas de **Performance ≥ 90, Accessibility ≥ 95, Best Practices ≥ 95 e SEO ≥ 90**, e exige justificar o que ficar abaixo.
+
+- **Accessibility, Best Practices e SEO:** atingidas em todas as páginas e perfis (100).
+- **Performance desktop:** atingida (99).
+- **Performance mobile (76 em Início e Detalhe): abaixo da meta de 90.** O LCP mobile fica entre 4,1 e 4,7 s com o throttling padrão (CPU 4×, RTT 150 ms). O TBT é baixo no Início (3 ms) e chega a 163 ms no Detalhe.
+
+### Causa identificada
+
+Medido nos relatórios mobile (execução 2 de Início e de Detalhe; as demais execuções têm valores próximos): o TTFB é de ≈ 5 ms e o FCP já só ocorre em ≈ 3,6–3,9 s. Na decomposição do LCP, a fase dominante é o **Load Delay (≈ 3,5 s no Início e ≈ 3,7 s no Detalhe)**; o download da imagem (Load Time: 0,3–0,5 s) e o Render Delay (0,06–0,5 s) são pequenos. O Lighthouse marca a imagem LCP como **não descobrível no HTML inicial**.
+
+Em outras palavras, o tempo é gasto antes de a imagem existir no DOM. Pelo código, esse encadeamento é: o `main.tsx` aguarda `startMocks()` (Service Worker do MSW) antes de importar e renderizar a aplicação; depois carregam os chunks de rota; depois a chamada `/api/nfts` é respondida pelo MSW; só então o `<img>` entra no DOM. No desktop esse caminho é curto (LCP ≈ 0,9 s); no mobile, com CPU 4× e RTT 150 ms, ele se estende por vários segundos. A relação entre cada etapa e o atraso é uma dedução a partir do código e dos relatórios — não foi isolada com medições separadas.
+
+### Oportunidades (ainda não aplicadas)
+
+- `<link rel="preload" as="image">` para a imagem LCP do Início (hoje o HTML não a referencia).
+- Reduzir o custo de boot do MSW no build de demonstração (o chunk `browser` tem ≈ 330 kB, 108 kB comprimidos, e bloqueia a primeira renderização).
+- Dividir o chunk `providers` (≈ 287 kB, 90 kB comprimidos).
+
+Esses itens não foram aplicados para manter a auditoria sem simplificações exclusivas para melhorar a pontuação. Os valores acima não incluem essas otimizações.

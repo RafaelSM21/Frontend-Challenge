@@ -8,14 +8,18 @@ dist/
 .env
 .env.*
 !.env.example
+!.env.mock
+!.env.mock
+.env.mock
 
 # Arquivos temporários e gerados
 .tanstack/tmp/
 playwright-report/
 test-results/
-reports/lighthouse/
-reports/lighthouse.zip
 
 # Sistema operacional
 .DS_Store
 Thumbs.db
+
+# Zips soltos (ex.: cópias dos relatórios) não entram no repositório
+*.zip

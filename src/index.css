@@ -4323,15 +4323,15 @@ button {
 /*Shared desktop header and footer, matched to the supplied KURIO screens.*/
 
 .site-header {
-  height: 62px;
+  height: 70px;
   border-bottom-color: #3f2319;
 }
 
 .header-inner {
-  height: 62px;
-  max-width: 1230px;
-  padding: 0 38px;
-  gap: 50px;
+  height: 70px;
+  max-width: 1440px;
+  padding: 0 5.3%;
+  gap: 28px;
 }
 
 .brand {
@@ -4343,8 +4343,8 @@ button {
 
 .header-links {
   height: 100%;
-  gap: 40px;
-  margin-left: auto;
+  gap: clamp(24px, 3vw, 42px);
+  margin-left: clamp(48px, 11vw, 165px);
 }
 
 .header-links a {
@@ -4373,8 +4373,8 @@ button {
 }
 
 .header-actions {
-  gap: 17px;
-  margin-left: 30px;
+  gap: 20px;
+  margin-left: auto;
 }
 
 .header-search {
@@ -5798,12 +5798,27 @@ button {
   gap: 8px;
 }
 
-.nft-editions span {
-  padding: 5px 7px;
+.nft-editions button {
+  padding: 7px 10px;
   border: 1px solid #8b5734;
   border-radius: 999px;
   color: #b39463;
+  background: transparent;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.nft-editions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.nft-editions small {
+  display: block;
+  margin-top: 9px;
+  color: #b39463;
   font-size: 11px;
+  line-height: 1.5;
 }
 
 .nft-editions .selected {
@@ -7067,38 +7082,6 @@ button {
   font-size: 12px;
 }
 
-.market-search-control {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 38px;
-  padding: 0 10px;
-  border: 1px solid #55321f;
-  border-radius: 3px;
-  background: #241612;
-  color: #b39463;
-}
-
-.market-search-control input {
-  width: 100%;
-  min-width: 0;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: #f5f1eb;
-  font: inherit;
-  font-size: 12px;
-}
-
-.market-search-control input::placeholder {
-  color: #a38a79;
-}
-
-.market-search-control:focus-within {
-  border-color: #b39463;
-  box-shadow: 0 0 0 1px #b39463;
-}
-
 .market-sort {
   margin-left: auto;
 }
@@ -7347,7 +7330,7 @@ button {
     margin-top: 21px;
   }
 
-  .market-search > span:first-child {
+  .market-search > span {
     display: none;
   }
 
@@ -7797,3 +7780,408 @@ button {
 .account-ticket-history .account-record-main p { margin: 4px 0 0; color: #d5c8bd; font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
 @media (max-width: 900px) { .account-favorites-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .account-coupon-card { grid-template-columns: auto minmax(0, 1fr); } .account-coupon-actions { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; } }
 @media (max-width: 560px) { .account-record { align-items: flex-start; gap: 10px; padding: 12px; } .account-record-icon { flex-basis: 34px; width: 34px; height: 34px; } .account-record-meta { max-width: 110px; } .account-favorites-grid { grid-template-columns: 1fr 1fr; gap: 10px; } .account-favorite-info { padding: 10px; } .account-coupon-card { grid-template-columns: 1fr; padding: 17px; } .account-coupon-actions { grid-column: auto; } }
+
+
+/* Confirmação de saída da conta */
+.logout-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(8, 5, 4, .78);
+  backdrop-filter: blur(5px);
+}
+.logout-modal {
+  width: min(100%, 420px);
+  padding: 30px;
+  border: 1px solid #55321f;
+  border-radius: 12px;
+  background: #1a100c;
+  color: #f5f1eb;
+  box-shadow: 0 24px 80px rgba(0,0,0,.45);
+}
+.logout-modal-icon { display: grid; place-items: center; width: 46px; height: 46px; margin-bottom: 18px; border: 1px solid #704526; border-radius: 50%; color: #e89b55; }
+.logout-modal h2 { margin: 0 0 10px; font-size: 22px; }
+.logout-modal p { margin: 0; color: #b9a89a; font-size: 14px; line-height: 1.6; }
+.logout-modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 26px; }
+.logout-modal-actions button { min-height: 40px; padding: 0 16px; border-radius: 6px; font: inherit; font-size: 13px; cursor: pointer; }
+.logout-cancel { border: 1px solid #55321f; background: transparent; color: #f5f1eb; }
+.logout-confirm { border: 1px solid #d28a4c; background: #d28a4c; color: #1a100c; font-weight: 700; }
+@media (max-width: 720px) { .header-links { margin-left: 0; } }
+
+
+/* Feedback consistente de navegação e seleção nos cards da home. */
+.journal-card-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  transform: scale(1);
+  transform-origin: center;
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+  cursor: pointer;
+}
+.journal-card-link:hover,
+.journal-card-link:focus-visible {
+  position: relative;
+  z-index: 1;
+  transform: scale(1.025);
+  border-color: #e99a4b;
+  box-shadow: 0 0 0 1px #e99a4b;
+  outline: none;
+}
+.journal-card-link:active { transform: scale(1.01); }
+.home-promo { transition: border-color 180ms ease, box-shadow 180ms ease; border: 1px solid transparent; }
+.home-promo:focus-within { border-color: #e99a4b; box-shadow: 0 0 0 1px #e99a4b; }
+.nft-card { transition: transform 180ms ease, outline-color 180ms ease, box-shadow 180ms ease; }
+.nft-card:focus-within { outline: 1px solid #e99a4b; outline-offset: 3px; box-shadow: 0 0 0 1px #e99a4b; }
+.nft-image-link:focus-visible, .nft-name:focus-visible { outline: 2px solid #e99a4b; outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) {
+  .journal-card-link, .home-promo, .nft-card { transition: none; }
+}
+
+
+/* Busca global: resultados reais com destino identificado. */
+.header-search { position: relative; }
+.header-search-form { position: relative; }
+.header-search-suggestions { position: absolute; z-index: 100; top: calc(100% + 9px); right: 0; width: min(390px, calc(100vw - 28px)); max-height: min(65vh, 440px); overflow: auto; padding: 6px; border: 1px solid #573522; border-radius: 8px; background: #1c100b; box-shadow: 0 18px 48px #0009; }
+.header-search-suggestions > button { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 14px; padding: 11px 10px; border: 0; border-radius: 5px; background: transparent; color: #f5f1eb; text-align: left; cursor: pointer; }
+.header-search-suggestions > button:hover, .header-search-suggestions > button:focus-visible { outline: none; background: #302016; }
+.search-suggestion-main { display: grid; gap: 4px; min-width: 0; font-size: 12px; }
+.search-suggestion-main small { overflow: hidden; color: #b89c85; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.search-suggestion-type { flex: 0 0 auto; padding: 4px 7px; border: 1px solid #754729; border-radius: 4px; color: #e99a4b; font-size: 9px; letter-spacing: .04em; }
+.search-suggestion-empty { margin: 0; padding: 13px 10px; color: #b89c85; font-size: 12px; }
+.header-search-suggestions .search-suggestion-all { margin-top: 4px; border-top: 1px solid #44291b; border-radius: 0; color: #e9c7a6; }
+.header-search-suggestions .search-suggestion-learn { color: #cbb7a7; }
+/* A animação precisa atuar no card inteiro do catálogo inicial, não só no foco. */
+.nft-card { transform: scale(1); transform-origin: center; transition: transform 180ms ease, border-color 180ms ease, outline-color 180ms ease, box-shadow 180ms ease; border: 1px solid transparent; }
+.nft-card:hover, .nft-card:focus-within { position: relative; z-index: 2; transform: scale(1.025); border-color: #e99a4b; outline: 1px solid #e99a4b; outline-offset: 0; box-shadow: 0 10px 28px #0005, 0 0 0 1px #e99a4b; }
+.nft-card:active { transform: scale(1.01); }
+@media (prefers-reduced-motion: reduce) { .nft-card { transition: none; } }
+@media (max-width: 720px) { .header-search-suggestions { right: -56px; } }
+
+/* Mercado: filtros em coluna lateral, alinhados ao padrão visual do catálogo da home. */
+.market-page .market-content, .market-page .market-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); align-items: start; gap: 26px; }
+.market-page .market-filters { grid-column: 1; grid-row: 1 / span 2; display: flex; flex-direction: column; align-items: stretch; gap: 14px; margin: 0; padding: 16px; border: 0; background: #241612; }
+.market-page .market-filter { min-width: 0; width: 100%; }
+.market-page .market-sort { margin-left: 0; }
+.market-page .market-result-count, .market-page .collection-grid, .market-page .creator-grid { grid-column: 2; }
+@media (max-width: 760px) { .market-page .market-content, .market-page .market-layout { display: block; } .market-page .market-filters { margin-bottom: 20px; } }
+
+
+/* Refino visual: cards da home naturais e filtros do Mercado em coluna lateral. */
+.nft-card { position: relative; border: 1px solid transparent; transform: none; transition: border-color 180ms ease, box-shadow 180ms ease; }
+.nft-card:hover, .nft-card:focus-within { z-index: 1; transform: none; border-color: #a96837; outline: none; box-shadow: 0 5px 18px rgb(0 0 0 / 22%); }
+.nft-card .nft-image-link > img { transition: transform 260ms cubic-bezier(.2,.7,.2,1); }
+.nft-card:hover .nft-image-link > img, .nft-card:focus-within .nft-image-link > img { transform: scale(1.025); }
+.nft-card:active { transform: none; }
+.market-collection-layout { display: grid; grid-template-columns: 218px minmax(0, 1fr); align-items: start; gap: 24px; }
+.market-filters { display: flex; flex-direction: column; align-items: stretch; gap: 15px; min-width: 0; margin: 0; padding: 17px 15px; border: 1px solid #3f2319; background: #1b100c; }
+.market-filter { min-width: 0; width: 100%; }
+.market-sort { margin-left: 0; }
+.market-collection-results { min-width: 0; }
+.market-collection-results .market-result-count { margin-top: 0; }
+.market-collection-results .collection-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+@media (max-width: 980px) { .market-collection-layout { grid-template-columns: 190px minmax(0, 1fr); gap: 18px; } .market-collection-results .collection-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 720px) { .market-collection-layout { display: block; } .market-filters { margin-bottom: 20px; } .market-collection-results .collection-grid { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .nft-card, .nft-card .nft-image-link > img { transition: none; } }
+
+
+/* Refinamento solicitado: cards do catálogo com base visual própria, sem contorno pesado na imagem. */
+.nft-card { overflow: visible; border: 1px solid transparent; background: transparent; transition: border-color 180ms ease, box-shadow 180ms ease; }
+.nft-card:hover, .nft-card:focus-within { transform: none; border-color: transparent; outline: none; box-shadow: none; }
+.nft-image-link { margin: 0; padding: 8px; border-radius: 8px; background: #2a1b14; transition: background-color 180ms ease, box-shadow 180ms ease; }
+.nft-image-link > img { display: block; border-radius: 5px; background: #35251b; transform: none; transition: transform 220ms cubic-bezier(.2,.7,.2,1); }
+.nft-card:hover .nft-image-link, .nft-card:focus-within .nft-image-link { background: #39251a; box-shadow: inset 0 0 0 1px #a96837; }
+.nft-card:hover .nft-image-link > img, .nft-card:focus-within .nft-image-link > img { transform: scale(1.018); }
+.nft-card .nft-info { padding: 8px 8px 10px; }
+.nft-card .nft-name:focus-visible, .nft-image-link:focus-visible { outline: 2px solid #e99a4b; outline-offset: 2px; }
+
+/* Diretório de criadores: mesma composição de duas colunas usada no catálogo inicial. */
+.creators-directory { display: grid; grid-template-columns: 218px minmax(0, 1fr); align-items: start; column-gap: 24px; row-gap: 0; }
+.creators-section-heading { grid-column: 1 / -1; width: 100%; }
+.creators-filters { grid-column: 1; grid-row: 2 / span 8; display: flex; flex-direction: column; align-items: stretch; gap: 15px; margin: 0; padding: 17px 15px; border: 1px solid #3f2319; background: #1b100c; }
+.creators-filter, .creators-filter:first-child { grid-column: auto; width: 100%; }
+.creators-filter input, .creators-filter select { min-height: 40px; background: #241612; border-color: #55321f; }
+.creators-result-count { grid-column: 2; margin: 0 0 13px; }
+.creator-grid, .creators-state { grid-column: 2; min-width: 0; }
+.creator-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.creator-card { transition: border-color 180ms ease, box-shadow 180ms ease; }
+.creator-card:hover, .creator-card:focus-visible { transform: none; border-color: #a96837; box-shadow: 0 5px 18px rgb(0 0 0 / 22%); outline: none; }
+@media (max-width: 980px) { .creators-directory { grid-template-columns: 190px minmax(0, 1fr); column-gap: 18px; } .creator-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 720px) { .creators-directory { display: block; } .creators-section-heading { display: flex; } .creators-filters { margin-bottom: 20px; } .creator-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; } }
+@media (max-width: 460px) { .creator-grid { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .nft-image-link, .nft-image-link > img, .creator-card { transition: none; } }
+
+/* Mercado e Criadores reutilizam o painel de filtros do Início (catalog-layout + FilterPanel).
+   Estas regras só neutralizam os layouts antigos de duas colunas por página. */
+.creators-directory { display: block; }
+.creators-section-heading { margin-bottom: 18px; }
+.creators-results, .market-collection-results { min-width: 0; }
+.creators-results .creator-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.filter-search { display: grid; gap: 7px; padding-top: 14px; }
+.filter-search label { color: #98785e; font-size: 9px; letter-spacing: 0.04em; }
+.filter-search input { width: 100%; min-height: 34px; padding: 0 10px; border: 1px solid #55321f; background: #241612; color: #f5f1eb; font: inherit; font-size: 11px; }
+.filter-search input:focus-visible { outline: 2px solid #e99a4b; outline-offset: 1px; }
+@media (max-width: 980px) { .creators-results .creator-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 720px) { .creators-results .creator-grid { gap: 12px; } }
+@media (max-width: 460px) { .creators-results .creator-grid { grid-template-columns: 1fr; } }
+
+/* ==========================================================================
+   Ajustes finais (card do NFT, quantidade, navbar fixa).
+   Este bloco vem por último de propósito: ele resolve o conflito entre as
+   regras antigas do card e da navbar espalhadas acima.
+   ========================================================================== */
+
+/* DM Mono: fonte de apoio da navbar, servida localmente por @fontsource/dm-mono. */
+@font-face {
+  font-family: "DM Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../node_modules/@fontsource/dm-mono/files/dm-mono-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "DM Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("../node_modules/@fontsource/dm-mono/files/dm-mono-latin-500-normal.woff2") format("woff2");
+}
+:root { --font-mono: "DM Mono", ui-monospace, "SFMono-Regular", Menlo, monospace; }
+
+/* Card do NFT: o bloco (fundo + borda) envolve imagem, nome e preço.
+   O hover atua no card inteiro e o zoom da imagem fica contido nele. */
+.nft-card,
+.related-nfts .nft-card {
+  position: relative;
+  overflow: hidden;
+  padding: 8px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: #2a1b14;
+  box-shadow: none;
+  outline: none;
+  transform: none;
+  transition: background-color 180ms ease, border-color 180ms ease;
+}
+.nft-card:hover,
+.nft-card:focus-within {
+  z-index: 1;
+  transform: none;
+  background: #33211a;
+  border-color: #a96837;
+  box-shadow: none;
+  outline: none;
+}
+.nft-card .nft-image-link {
+  display: block;
+  position: relative;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 6px;
+  background: transparent;
+  box-shadow: none;
+}
+.nft-card:hover .nft-image-link,
+.nft-card:focus-within .nft-image-link { background: transparent; box-shadow: none; }
+.nft-card .nft-image-link > img {
+  display: block;
+  border-radius: 6px;
+  transform: scale(1);
+  transition: transform 260ms cubic-bezier(.2, .7, .2, 1);
+}
+.nft-card:hover .nft-image-link > img,
+.nft-card:focus-within .nft-image-link > img { transform: scale(1.04); }
+.nft-card .nft-info { padding: 10px 2px 4px; }
+.nft-card .nft-name:focus-visible,
+.nft-card .nft-image-link:focus-visible { outline: 2px solid #e99a4b; outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  .nft-card .nft-image-link > img,
+  .nft-card:hover .nft-image-link > img,
+  .nft-card:focus-within .nft-image-link > img { transform: none; transition: none; }
+}
+
+/* Seletor de quantidade: botões redondos e rótulo em uma linha, sem sobreposição. */
+.nft-buy-row .quantity-control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 14px;
+  width: auto;
+  height: 43px;
+  border: 0;
+  background: transparent;
+}
+.nft-buy-row .quantity-control button {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-radius: 50%;
+  line-height: 1;
+}
+.nft-buy-row .quantity-control span {
+  display: block;
+  min-width: 76px;
+  height: auto;
+  border: 0;
+  text-align: center;
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+/* Navbar fixa: acompanha o scroll, com fundo opaco para o conteúdo não aparecer por trás. */
+html { scroll-padding-top: 88px; }
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  height: 70px;
+  border-bottom: 1px solid #3f2319;
+  background: rgba(20, 13, 10, 0.96);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+.site-header .header-inner {
+  position: relative;
+  max-width: 1248px;
+  height: 70px;
+  margin: 0 auto;
+  padding: 0 24px;
+  gap: 28px;
+}
+.site-header .brand,
+.site-header .brand span {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+}
+/* Links centralizados na barra, como no exemplo. */
+.site-header .header-links {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+  height: 100%;
+  margin: 0;
+  gap: clamp(22px, 3vw, 40px);
+}
+.site-header .header-links a {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 400;
+  white-space: nowrap;
+}
+.site-header .header-links a.nav-link-active::after { height: 1px; }
+.site-header .header-login {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 5px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+.site-header .header-login svg { width: 15px; height: 15px; }
+@media (max-width: 720px) {
+  .site-header { height: 58px; }
+  .site-header .header-inner { height: 58px; padding: 0 16px; gap: 12px; }
+  /* No mobile o menu abre como painel abaixo da barra, fora do fluxo centralizado. */
+  .site-header .header-links {
+    left: 0;
+    right: 0;
+    top: 58px;
+    height: auto;
+    transform: none;
+  }
+  .site-header .header-login { min-height: 30px; padding: 0 11px; font-size: 11px; }
+}
+
+/* Mensagens de erro associadas a campos de formulários de conta */
+.account-form-grid .field-error,
+.password-form .field-error {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* Drawer de filtros aberto (diálogo modal): rola dentro do próprio painel. */
+@media (max-width: 720px) {
+  .filters.filters-open {
+    max-height: 90dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
+/* Skeletons de carrinho e pagamento (shimmer; dimensões iguais às telas reais) */
+.sk {
+  background: linear-gradient(110deg, #241612 8%, #38220f 18%, #241612 33%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+  border-radius: 3px;
+}
+.sk-cart-image {
+  width: 100%; /* acompanha a coluna da imagem em cada breakpoint */
+  aspect-ratio: 1;
+  border-radius: 5px;
+}
+/* Linha de carrinho em carregamento: mesmo markup e mesmo display do item real,
+   só com texto invisível. Não alterar `display`: o span do tipo é inline e o botão
+   é inline-block no item real, e isso define a altura das linhas. */
+.cart-item.is-placeholder .sk-ink,
+.cart-item.is-placeholder .cart-quantity * {
+  color: transparent;
+}
+/* Mantém o shimmer mesmo onde `.cart-item button` zera o background. */
+.cart-item.is-placeholder .sk {
+  background: linear-gradient(110deg, #241612 8%, #38220f 18%, #241612 33%);
+  background-size: 200% 100%;
+}
+.cart-item.is-placeholder button:disabled {
+  opacity: 1;
+  cursor: default;
+}
+.sk-line {
+  height: 12px;
+  margin: 0 0 14px;
+  width: 100%;
+}
+.sk-line-short {
+  width: 30%;
+}
+.sk-line-medium {
+  width: 55%;
+}
+.sk-line-title {
+  height: 18px;
+  width: 45%;
+  margin-bottom: 18px;
+}
+.sk-field {
+  height: 40px;
+  width: 100%;
+  margin: 0 0 16px;
+}
+.sk-button {
+  height: 46px;
+  width: 100%;
+  margin-top: 10px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sk {
+    animation: none;
+  }
+}

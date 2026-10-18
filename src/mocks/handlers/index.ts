@@ -61,7 +61,10 @@ const quoteCart = (userId: string): Quote | undefined => {
     cart.coupon === "KURIO10" ? subtotal.times("0.10") : new Decimal(0);
   const fee = cart.items.length ? new Decimal("0.008") : new Decimal(0);
   const pricingVersion = cart.items
-    .map((item) => `${item.nftId}:${db.getNft(item.nftId)?.version ?? 0}`)
+    .map(
+      (item) =>
+        `${item.nftId}:${item.editionNumber ?? "default"}:${db.getNft(item.nftId)?.version ?? 0}`,
+    )
     .join("|");
   return {
     quoteId: `quote-${userId}-${cart.version}-${pricingVersion}`,
@@ -407,7 +410,8 @@ export const handlers = [
     });
   }),
 
-  http.get("/api/cart", ({ request }) => {
+  http.get("/api/cart", async ({ request }) => {
+    if (readScenario() === "slow-network") await delay(1200);
     const user = authenticated(request);
     if (!user)
       return error(
@@ -433,13 +437,50 @@ export const handlers = [
       !Array.isArray(items) ||
       items.some(
         (item) =>
-          !item || !Number.isInteger(item.quantity) || item.quantity < 1,
+          !item ||
+          !Number.isInteger(item.quantity) ||
+          item.quantity < 1 ||
+          (item.editionNumber !== undefined &&
+            (!Number.isInteger(item.editionNumber) || item.editionNumber < 1)),
       )
     )
       return error(400, "INVALID_CART", "Carrinho inválido.");
+    const editionKeys = items
+      .filter((item) => item.editionNumber !== undefined)
+      .map((item) => `${item.nftId}:${item.editionNumber}`);
+    if (new Set(editionKeys).size !== editionKeys.length)
+      return error(
+        409,
+        "EDITION_DUPLICATE",
+        "Esta edição já está no carrinho.",
+      );
+    const totalsByNft = new Map<string, number>();
+    for (const item of items)
+      totalsByNft.set(
+        item.nftId,
+        (totalsByNft.get(item.nftId) ?? 0) + item.quantity,
+      );
+    for (const [nftId, quantity] of totalsByNft) {
+      const nft = db.getNft(nftId);
+      if (nft && quantity > nft.available)
+        return error(
+          409,
+          "AVAILABILITY_CONFLICT",
+          `A edição ${nft.name} não possui estoque suficiente.`,
+        );
+    }
     for (const item of items) {
       const nft = db.getNft(item.nftId);
       if (!nft) return error(404, "NFT_NOT_FOUND", "Uma obra não existe mais.");
+      if (
+        item.editionNumber !== undefined &&
+        item.editionNumber > nft.editionTotal
+      )
+        return error(
+          400,
+          "INVALID_EDITION",
+          "A edição selecionada não existe.",
+        );
       if (item.quantity > nft.available)
         return error(
           409,
@@ -463,25 +504,28 @@ export const handlers = [
       items?: Cart["items"];
     };
     const current = db.getCart(user.id)!;
-    const quantities = new Map(
-      current.items.map((item) => [item.nftId, item.quantity]),
+    const byEdition = new Map(
+      current.items.map((item) => [
+        `${item.nftId}:${item.editionNumber ?? "default"}`,
+        item,
+      ]),
     );
-    for (const item of input.items ?? [])
-      quantities.set(
-        item.nftId,
-        (quantities.get(item.nftId) ?? 0) + item.quantity,
-      );
-    const items = [...quantities.entries()].map(([nftId, quantity]) => ({
-      nftId,
-      quantity,
-    }));
+    for (const item of input.items ?? []) {
+      const key = `${item.nftId}:${item.editionNumber ?? "default"}`;
+      if (!byEdition.has(key)) byEdition.set(key, { ...item, quantity: 1 });
+    }
+    const items = [...byEdition.values()];
     for (const item of items) {
       const nft = db.getNft(item.nftId);
       if (
         !nft ||
         !Number.isInteger(item.quantity) ||
         item.quantity < 1 ||
-        item.quantity > nft.available
+        item.quantity > nft.available ||
+        (item.editionNumber !== undefined &&
+          (!Number.isInteger(item.editionNumber) ||
+            item.editionNumber < 1 ||
+            item.editionNumber > nft.editionTotal))
       )
         return error(
           409,
@@ -535,7 +579,8 @@ export const handlers = [
     });
   }),
 
-  http.post("/api/checkout/quote", ({ request }) => {
+  http.post("/api/checkout/quote", async ({ request }) => {
+    if (readScenario() === "slow-network") await delay(1200);
     const user = authenticated(request);
     if (!user)
       return error(
@@ -617,8 +662,41 @@ export const handlers = [
       const changed = db.updateNft(cart.items[0].nftId, { available: 0 });
       if (changed) emitNftUpdated(changed);
     }
+    const selectedEditionKeys = cart.items
+      .filter((item) => item.editionNumber !== undefined)
+      .map((item) => `${item.nftId}:${item.editionNumber}`);
+    if (new Set(selectedEditionKeys).size !== selectedEditionKeys.length)
+      return error(
+        409,
+        "EDITION_DUPLICATE",
+        "Uma edição foi selecionada mais de uma vez.",
+      );
+    const orderTotalsByNft = new Map<string, number>();
+    for (const item of cart.items)
+      orderTotalsByNft.set(
+        item.nftId,
+        (orderTotalsByNft.get(item.nftId) ?? 0) + item.quantity,
+      );
+    for (const [nftId, quantity] of orderTotalsByNft) {
+      const nft = db.getNft(nftId);
+      if (!nft || quantity > nft.available)
+        return error(
+          409,
+          "AVAILABILITY_CONFLICT",
+          "O estoque mudou. Revise seu carrinho.",
+        );
+    }
     for (const item of cart.items) {
       const nft = db.getNft(item.nftId)!;
+      if (
+        item.editionNumber !== undefined &&
+        item.editionNumber > nft.editionTotal
+      )
+        return error(
+          400,
+          "INVALID_EDITION",
+          "A edição selecionada não existe.",
+        );
       if (item.quantity > nft.available)
         return error(
           409,
@@ -647,7 +725,10 @@ export const handlers = [
     if (status === "confirmed") {
       for (const item of cart.items) {
         const nft = db.getNft(item.nftId)!;
-        db.updateNft(nft.id, { available: nft.available - item.quantity });
+        const updatedNft = db.updateNft(nft.id, {
+          available: nft.available - item.quantity,
+        });
+        if (updatedNft) emitNftUpdated(updatedNft);
       }
       db.saveCart(user.id, { items: [] });
     }
@@ -657,99 +738,106 @@ export const handlers = [
     return HttpResponse.json({ order: saved }, { status: 201 });
   }),
 
-  http.post("/api/__mock/orders/:orderId/update", async ({ request, params }) => {
-    const user = sessionUser(request);
-    if (!user)
-      return error(401, "UNAUTHORIZED", "Entre para atualizar este pedido.");
-    const order = db.getOrder(user.id, String(params.orderId));
-    if (!order)
-      return error(404, "ORDER_NOT_FOUND", "Pedido não encontrado.");
-    const body = (await request.json().catch(() => ({}))) as {
-      status?: unknown;
-    };
-    if (body.status !== "confirmed" && body.status !== "declined")
-      return error(400, "INVALID_ORDER_STATUS", "Estado de pedido inválido.");
-    if (order.status !== "pending")
-      return error(
-        409,
-        "ORDER_TERMINAL",
-        "O pedido já está em um estado terminal.",
-      );
-    if (body.status === "confirmed") {
-      for (const item of order.items) {
-        const nft = db.getNft(item.nftId);
-        if (!nft || item.quantity > nft.available)
-          return error(
-            409,
-            "AVAILABILITY_CONFLICT",
-            "Uma das obras do pedido não está mais disponível.",
-          );
-      }
-      for (const item of order.items) {
-        const nft = db.getNft(item.nftId)!;
-        const updatedNft = db.updateNft(nft.id, {
-          available: nft.available - item.quantity,
-        });
-        if (updatedNft) emitNftUpdated(updatedNft);
-      }
-      const cart = db.getCart(user.id);
-      if (cart) {
-        const purchased = new Map(
-          order.items.map((item) => [item.nftId, item.quantity]),
+  http.post(
+    "/api/__mock/orders/:orderId/update",
+    async ({ request, params }) => {
+      const user = sessionUser(request);
+      if (!user)
+        return error(401, "UNAUTHORIZED", "Entre para atualizar este pedido.");
+      const order = db.getOrder(user.id, String(params.orderId));
+      if (!order)
+        return error(404, "ORDER_NOT_FOUND", "Pedido não encontrado.");
+      const body = (await request.json().catch(() => ({}))) as {
+        status?: unknown;
+      };
+      if (body.status !== "confirmed" && body.status !== "declined")
+        return error(400, "INVALID_ORDER_STATUS", "Estado de pedido inválido.");
+      if (order.status !== "pending")
+        return error(
+          409,
+          "ORDER_TERMINAL",
+          "O pedido já está em um estado terminal.",
         );
-        const remaining = cart.items.flatMap((item) => {
-          const quantity = item.quantity - (purchased.get(item.nftId) ?? 0);
-          return quantity > 0 ? [{ ...item, quantity }] : [];
-        });
-        db.saveCart(user.id, { items: remaining, coupon: cart.coupon });
+      if (body.status === "confirmed") {
+        for (const item of order.items) {
+          const nft = db.getNft(item.nftId);
+          if (!nft || item.quantity > nft.available)
+            return error(
+              409,
+              "AVAILABILITY_CONFLICT",
+              "Uma das obras do pedido não está mais disponível.",
+            );
+        }
+        for (const item of order.items) {
+          const nft = db.getNft(item.nftId)!;
+          const updatedNft = db.updateNft(nft.id, {
+            available: nft.available - item.quantity,
+          });
+          if (updatedNft) emitNftUpdated(updatedNft);
+        }
+        const cart = db.getCart(user.id);
+        if (cart) {
+          const purchased = new Map(
+            order.items.map((item) => [item.nftId, item.quantity]),
+          );
+          const remaining = cart.items.flatMap((item) => {
+            const quantity = item.quantity - (purchased.get(item.nftId) ?? 0);
+            return quantity > 0 ? [{ ...item, quantity }] : [];
+          });
+          db.saveCart(user.id, { items: remaining, coupon: cart.coupon });
+        }
       }
-    }
-    const updated = db.updateOrderStatus(
-      user.id,
-      order.id,
-      body.status as Order["status"],
-    );
-    if (!updated) return error(409, "ORDER_TERMINAL", "Pedido não atualizável.");
-    emitOrderUpdated(user.id, updated);
-    return HttpResponse.json({ order: updated });
-  }),
+      const updated = db.updateOrderStatus(
+        user.id,
+        order.id,
+        body.status as Order["status"],
+      );
+      if (!updated)
+        return error(409, "ORDER_TERMINAL", "Pedido não atualizável.");
+      emitOrderUpdated(user.id, updated);
+      return HttpResponse.json({ order: updated });
+    },
+  ),
 
-  http.post("/api/__mock/orders/:orderId/event", async ({ request, params }) => {
-    const user = sessionUser(request);
-    if (!user)
-      return error(401, "UNAUTHORIZED", "Entre para emitir este evento.");
-    const order = db.getOrder(user.id, String(params.orderId));
-    if (!order)
-      return error(404, "ORDER_NOT_FOUND", "Pedido não encontrado.");
-    const body = (await request.json().catch(() => ({}))) as {
-      eventId?: unknown;
-      version?: unknown;
-      status?: unknown;
-    };
-    if (
-      typeof body.eventId !== "string" ||
-      !Number.isInteger(body.version) ||
-      (body.version as number) < 1 ||
-      (body.status !== "pending" &&
-        body.status !== "confirmed" &&
-        body.status !== "declined")
-    )
-      return error(400, "INVALID_ORDER_EVENT", "Evento de pedido inválido.");
-    const replayStatus = body.status as Order["status"];
-    const replayOrder: Order = {
-      ...order,
-      status: replayStatus,
-      version: body.version as number,
-    };
-    emitOrderEvent(user.id, {
-      eventId: body.eventId,
-      resourceId: order.id,
-      version: replayOrder.version,
-      status: replayStatus,
-      order: replayOrder,
-    });
-    return HttpResponse.json({ emitted: true });
-  }),
+  http.post(
+    "/api/__mock/orders/:orderId/event",
+    async ({ request, params }) => {
+      const user = sessionUser(request);
+      if (!user)
+        return error(401, "UNAUTHORIZED", "Entre para emitir este evento.");
+      const order = db.getOrder(user.id, String(params.orderId));
+      if (!order)
+        return error(404, "ORDER_NOT_FOUND", "Pedido não encontrado.");
+      const body = (await request.json().catch(() => ({}))) as {
+        eventId?: unknown;
+        version?: unknown;
+        status?: unknown;
+      };
+      if (
+        typeof body.eventId !== "string" ||
+        !Number.isInteger(body.version) ||
+        (body.version as number) < 1 ||
+        (body.status !== "pending" &&
+          body.status !== "confirmed" &&
+          body.status !== "declined")
+      )
+        return error(400, "INVALID_ORDER_EVENT", "Evento de pedido inválido.");
+      const replayStatus = body.status as Order["status"];
+      const replayOrder: Order = {
+        ...order,
+        status: replayStatus,
+        version: body.version as number,
+      };
+      emitOrderEvent(user.id, {
+        eventId: body.eventId,
+        resourceId: order.id,
+        version: replayOrder.version,
+        status: replayStatus,
+        order: replayOrder,
+      });
+      return HttpResponse.json({ emitted: true });
+    },
+  ),
 
   http.get("/api/orders/:orderId", ({ request, params }) => {
     const user = authenticated(request);

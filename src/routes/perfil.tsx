@@ -2,6 +2,8 @@ import type { FormEvent } from "react";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { Input, FieldError } from "@/components/ui/input";
+import { parseApiError } from "@/lib/api-error";
 import { AccountSidebar } from "@/components/layout/account-sidebar";
 import { getSession, setSession } from "@/features/auth/session";
 import { apiErrorMessage, type Profile } from "@/lib/contracts";
@@ -52,6 +54,7 @@ function ProfilePage() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [message, setMessage] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const userId = getSession()?.user.id;
   const profileQuery = useQuery({
     queryKey: ["profile", userId],
@@ -78,8 +81,17 @@ function ProfilePage() {
         });
       setMessage("Dados do perfil salvos.");
     },
-    onError: (error) =>
-      setMessage(apiErrorMessage(error, "Não foi possível salvar o perfil.")),
+    onError: (error) => {
+      const { code, message: text, fields } = parseApiError(error);
+      const mapped: Record<string, string> = { ...fields };
+      if (code === "EMAIL_EXISTS" && text) mapped.email = text;
+      if (Object.keys(mapped).length) {
+        setFieldErrors(mapped);
+        const first = Object.keys(mapped)[0];
+        if (first) document.getElementById(`profile-${first}`)?.focus();
+      }
+      setMessage(apiErrorMessage(error, "Não foi possível salvar o perfil."));
+    },
   });
   const changePassword = useMutation({
     mutationFn: async () =>
@@ -90,17 +102,31 @@ function ProfilePage() {
       setConfirmPassword("");
       setMessage("Senha alterada.");
     },
-    onError: (error) =>
-      setMessage(apiErrorMessage(error, "Não foi possível alterar a senha.")),
+    onError: (error) => {
+      const { code, message: text, fields } = parseApiError(error);
+      const mapped: Record<string, string> = { ...fields };
+      if (code === "INVALID_PASSWORD" && text) mapped.currentPassword = text;
+      if (Object.keys(mapped).length) {
+        setFieldErrors(mapped);
+        const first = Object.keys(mapped)[0];
+        if (first) document.getElementById(`profile-${first}`)?.focus();
+      }
+      setMessage(apiErrorMessage(error, "Não foi possível alterar a senha."));
+    },
   });
   const update = (key: keyof Profile, value: string) =>
     setProfile((current) => ({ ...current, [key]: value }));
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage("");
+    setFieldErrors({});
     if (newPassword || confirmPassword || currentPassword) {
       if (newPassword !== confirmPassword) {
+        setFieldErrors({
+          confirmPassword: "A nova senha e a confirmação não coincidem.",
+        });
         setMessage("A nova senha e a confirmação não coincidem.");
+        document.getElementById("profile-confirmPassword")?.focus();
         return;
       }
       changePassword.mutate();
@@ -135,11 +161,17 @@ function ProfilePage() {
           <div className="account-form-grid">
             <label>
               Nome de exibição
-              <input
+              <Input
+                id="profile-displayName"
+                aria-label="Nome de exibição"
+                error={fieldErrors.displayName}
                 value={profile.displayName}
                 onChange={(e) => update("displayName", e.target.value)}
                 required
               />
+              <FieldError id="profile-displayName-error">
+                {fieldErrors.displayName}
+              </FieldError>
             </label>
             <div className="avatar-field">
               <span>Foto de perfil</span>
@@ -201,62 +233,102 @@ function ProfilePage() {
             </div>
             <label>
               Nome de usuário
-              <input
+              <Input
+                id="profile-username"
+                aria-label="Nome de usuário"
+                error={fieldErrors.username}
                 value={profile.username}
                 onChange={(e) => update("username", e.target.value)}
                 required
               />
+              <FieldError id="profile-username-error">
+                {fieldErrors.username}
+              </FieldError>
             </label>
             <label>
               E-mail
-              <input
+              <Input
+                id="profile-email"
+                aria-label="E-mail"
+                error={fieldErrors.email}
                 type="email"
                 value={profile.email}
                 onChange={(e) => update("email", e.target.value)}
                 required
               />
+              <FieldError id="profile-email-error">
+                {fieldErrors.email}
+              </FieldError>
             </label>
             <label>
               Nome ENS
-              <input
+              <Input
+                id="profile-ens"
+                aria-label="Nome ENS"
+                error={fieldErrors.ens}
                 value={profile.ens}
                 onChange={(e) => update("ens", e.target.value)}
               />
+              <FieldError id="profile-ens-error">{fieldErrors.ens}</FieldError>
             </label>
             <label>
               Apelido da carteira
-              <input
+              <Input
+                id="profile-walletAlias"
+                aria-label="Apelido da carteira"
+                error={fieldErrors.walletAlias}
                 value={profile.walletAlias}
                 onChange={(e) => update("walletAlias", e.target.value)}
                 required
               />
+              <FieldError id="profile-walletAlias-error">
+                {fieldErrors.walletAlias}
+              </FieldError>
             </label>
           </div>
           <h3 className="password-heading">Alterar senha</h3>
           <div className="password-form">
             <label>
               Senha atual
-              <input
+              <Input
+                id="profile-currentPassword"
+                aria-label="Senha atual"
+                error={fieldErrors.currentPassword}
                 type="password"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
               />
+              <FieldError id="profile-currentPassword-error">
+                {fieldErrors.currentPassword}
+              </FieldError>
             </label>
             <label>
               Nova senha
-              <input
+              <Input
+                id="profile-newPassword"
+                aria-label="Nova senha"
+                error={fieldErrors.newPassword}
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
               />
+              <FieldError id="profile-newPassword-error">
+                {fieldErrors.newPassword}
+              </FieldError>
             </label>
             <label>
               Confirmar nova senha
-              <input
+              <Input
+                id="profile-confirmPassword"
+                aria-label="Confirmar nova senha"
+                error={fieldErrors.confirmPassword}
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
               />
+              <FieldError id="profile-confirmPassword-error">
+                {fieldErrors.confirmPassword}
+              </FieldError>
             </label>
           </div>
           {message && (

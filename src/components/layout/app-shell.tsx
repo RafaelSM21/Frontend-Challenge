@@ -6,13 +6,14 @@ import {
   BookOpen,
   Compass,
   House,
+  LogIn,
   ShoppingCart,
   UserRound,
   UsersRound,
 } from "lucide-react";
 import { catalogCategories } from "@/lib/contracts";
+import { searchCatalog, getMarketCollections, getMarketCreators } from "@/features/catalog/api";
 import {
-  clearSession,
   getSession,
   SESSION_EVENT,
 } from "@/features/auth/session";
@@ -41,6 +42,10 @@ export function AppShell() {
   );
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const normalizedQuery = query.trim();
+  const suggestionsNfts = useQuery({ queryKey: ["header-search-nfts", normalizedQuery], enabled: searchOpen && normalizedQuery.length > 1, queryFn: ({ signal }) => searchCatalog({ q: normalizedQuery, pagina: 1, ordenar: "recentes" }, signal) });
+  const suggestionsCollections = useQuery({ queryKey: ["header-search-collections"], enabled: searchOpen && normalizedQuery.length > 1, queryFn: ({ signal }) => getMarketCollections(signal) });
+  const suggestionsCreators = useQuery({ queryKey: ["header-search-creators"], enabled: searchOpen && normalizedQuery.length > 1, queryFn: ({ signal }) => getMarketCreators(signal) });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [session, setSession] = useState(() => getSession());
   const [cartCount, setCartCount] = useState(() =>
@@ -135,11 +140,13 @@ export function AppShell() {
   function submitSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSearchOpen(false);
-    navigate({
-      to: "/",
-      search: (previous) => ({ ...previous, q: query || undefined, pagina: 1 }),
-    });
+    navigate({ to: "/", search: (previous) => ({ ...previous, q: query.trim() || undefined, pagina: 1 }) });
   }
+
+  const matchingNfts = (suggestionsNfts.data?.items ?? []).slice(0, 4);
+  const matchingCollections = (suggestionsCollections.data ?? []).filter((item) => item.name.toLocaleLowerCase().includes(normalizedQuery.toLocaleLowerCase())).slice(0, 3);
+  const matchingCreators = (suggestionsCreators.data ?? []).filter((item) => item.name.toLocaleLowerCase().includes(normalizedQuery.toLocaleLowerCase())).slice(0, 3);
+  const hasSuggestions = matchingNfts.length + matchingCollections.length + matchingCreators.length > 0;
 
   return (
     <div
@@ -186,14 +193,27 @@ export function AppShell() {
                 <SearchIcon />
               </button>
               {searchOpen && (
-                <form onSubmit={submitSearch} className="header-search-form">
+                <form onSubmit={submitSearch} className="header-search-form" role="search">
                   <input
                     autoFocus
-                    aria-label="Buscar obras"
-                    placeholder="Buscar obras..."
+                    aria-label="Buscar NFTs, coleções ou criadores"
+                    placeholder="Buscar NFTs, coleções ou criadores..."
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
+                    aria-expanded={normalizedQuery.length > 1}
+                    aria-controls="header-search-suggestions"
                   />
+                  {normalizedQuery.length > 1 && (
+                    <div className="header-search-suggestions" id="header-search-suggestions" role="listbox" aria-label="Sugestões de busca">
+                      {matchingNfts.map((nft) => <button type="button" role="option" key={`nft-${nft.id}`} onClick={() => { setSearchOpen(false); void navigate({ to: "/nfts/$nftId", params: { nftId: nft.id } }); }}><span className="search-suggestion-main">{nft.name}<small>{nft.collection}</small></span><span className="search-suggestion-type">Mercado</span></button>)}
+                      {matchingCollections.map((collection) => <button type="button" role="option" key={`collection-${collection.name}`} onClick={() => { setSearchOpen(false); void navigate({ to: "/colecoes/$collectionName", params: { collectionName: collection.name } }); }}><span className="search-suggestion-main">{collection.name}<small>{collection.nftCount} obras</small></span><span className="search-suggestion-type">Mercado</span></button>)}
+                      {matchingCreators.map((creator) => <button type="button" role="option" key={`creator-${creator.name}`} onClick={() => { setSearchOpen(false); void navigate({ to: "/criadores", search: { q: creator.name } }); }}><span className="search-suggestion-main">{creator.name}<small>{creator.nftCount} obras</small></span><span className="search-suggestion-type">Criadores</span></button>)}
+                      {!hasSuggestions && !(suggestionsNfts.isLoading || suggestionsCollections.isLoading || suggestionsCreators.isLoading) && <p className="search-suggestion-empty">Nenhum resultado encontrado.</p>}
+                      {(suggestionsNfts.isLoading || suggestionsCollections.isLoading || suggestionsCreators.isLoading) && <p className="search-suggestion-empty">Buscando sugestões…</p>}
+                      <button type="submit" className="search-suggestion-all"><span>Ver todos os resultados para “{normalizedQuery}”</span><span className="search-suggestion-type">Início</span></button>
+                      <button type="button" className="search-suggestion-learn" onClick={() => { setSearchOpen(false); void navigate({ to: "/aprenda", search: { q: normalizedQuery } }); }}><span>Pesquisar conteúdo educativo</span><span className="search-suggestion-type">Aprenda</span></button>
+                    </div>
+                  )}
                 </form>
               )}
             </div>
@@ -222,19 +242,10 @@ export function AppShell() {
                 >
                   <UserIcon />
                 </Link>
-                <button
-                  type="button"
-                  className="header-logout"
-                  onClick={() => {
-                    clearSession();
-                    navigate({ to: "/" });
-                  }}
-                >
-                  Sair
-                </button>
               </div>
             ) : (
               <Link to="/login" className="header-login">
+                <LogIn aria-hidden="true" />
                 Entrar
               </Link>
             )}

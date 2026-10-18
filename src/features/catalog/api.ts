@@ -1,6 +1,5 @@
 import { http } from "@/lib/http";
-import type { CatalogCategory, Network } from "@/lib/contracts";
-import type { Nft } from "@/mocks/db/types";
+import type { CatalogCategory, Network, Nft } from "@/lib/contracts";
 import type { CatalogSearch } from "./search";
 
 export type CatalogResponse = {

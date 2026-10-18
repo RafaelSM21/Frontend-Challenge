@@ -2,13 +2,13 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import { toast } from "sonner";
 import { getNftDetails, getRelatedNfts } from "@/features/nft-detail/api";
 import { getFavoriteIds, setFavorite } from "@/features/favorites/api";
 import { addNftToServerCart } from "@/features/cart/api";
 import { addCartItem } from "@/features/cart/storage";
 import { getSession } from "@/features/auth/session";
-import type { Nft } from "@/mocks/db/types";
-import { apiErrorMessage } from "@/lib/contracts";
+import { apiErrorMessage, type Nft } from "@/lib/contracts";
 
 export const Route = createFileRoute("/nfts/$nftId")({
   component: NftDetailPage,
@@ -19,6 +19,7 @@ function NftDetailPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const session = getSession();
+  const [editionNumber, setEditionNumber] = useState(1);
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
   const [favoriteMessage, setFavoriteMessage] = useState("");
@@ -51,7 +52,7 @@ function NftDetailPage() {
   }, [nft, relatedQuery.data]);
 
   useEffect(() => {
-    setQuantity(1);
+    setEditionNumber(1);
     setActiveImage(0);
   }, [nftId]);
 
@@ -79,13 +80,17 @@ function NftDetailPage() {
   });
 
   const cartMutation = useMutation({
-    mutationFn: async () => addNftToServerCart(nftId, quantity),
+    mutationFn: async () => addNftToServerCart(nftId, editionNumber, quantity),
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: ["cart", session?.user?.id],
       });
       void navigate({ to: "/carrinho" });
     },
+    onError: (error) =>
+      toast.error(
+        apiErrorMessage(error, "Não foi possível adicionar ao carrinho."),
+      ),
   });
 
   const toggleFavorite = () => {
@@ -98,7 +103,7 @@ function NftDetailPage() {
   };
 
   const addToCart = () => {
-    if (!nft || nft.available < 1) return;
+    if (!nft || available < quantity || quantity < 1) return;
     if (session) {
       cartMutation.mutate();
       return;
@@ -111,6 +116,7 @@ function NftDetailPage() {
       network: nft.network,
       quantity,
       available,
+      editionNumber,
     });
     void navigate({ to: "/carrinho" });
   };
@@ -155,7 +161,6 @@ function NftDetailPage() {
   if (!nft) return null;
 
   const available = Math.max(0, nft.available);
-  const maxQuantity = Math.min(available, 10);
 
   return (
     <div className="nft-detail-page">
@@ -207,10 +212,7 @@ function NftDetailPage() {
         <div className="nft-detail-copy">
           <div className="nft-detail-title-row">
             <div>
-              <h1>
-                {nft.name}{" "}
-                <span>#{nft.id.replace("nft-", "").padStart(3, "0")}</span>
-              </h1>
+              <h1>{nft.name}</h1>
             </div>
             <button
               className={`favorite-detail ${isFavorite ? "is-favorite" : ""}`}
@@ -246,13 +248,29 @@ function NftDetailPage() {
           </div>
 
           <div className="nft-editions">
-            <strong>Edição:</strong>
-            <div>
-              <span>1/1</span>
-              <span>1/10</span>
-              <span className="selected">1/{nft.edition}</span>
-              <span>ABERTA</span>
+            <strong>Escolha a edição:</strong>
+            <div role="group" aria-label="Selecionar edição">
+              {Array.from(
+                { length: Math.max(1, nft.editionTotal) },
+                (_, index) => index + 1,
+              ).map((edition) => (
+                <button
+                  key={edition}
+                  type="button"
+                  className={editionNumber === edition ? "selected" : ""}
+                  aria-pressed={editionNumber === edition}
+                  disabled={available === 0}
+                  onClick={() => setEditionNumber(edition)}
+                >
+                  #{edition}
+                </button>
+              ))}
             </div>
+            <small>
+              {available}{" "}
+              {available === 1 ? "unidade disponível" : "unidades disponíveis"}.
+              A unidade escolhida será registrada no pedido.
+            </small>
           </div>
 
           <div className="nft-buy-row">
@@ -265,13 +283,15 @@ function NftDetailPage() {
               >
                 −
               </button>
-              <span>{quantity}</span>
+              <span>
+                {quantity} {quantity === 1 ? "unidade" : "unidades"}
+              </span>
               <button
                 type="button"
                 aria-label="Aumentar quantidade"
-                disabled={quantity >= maxQuantity}
+                disabled={quantity >= available}
                 onClick={() =>
-                  setQuantity((value) => Math.min(maxQuantity || 1, value + 1))
+                  setQuantity((value) => Math.min(available, value + 1))
                 }
               >
                 +
@@ -280,7 +300,7 @@ function NftDetailPage() {
             <button
               className="button button-primary nft-buy-button"
               type="button"
-              disabled={available === 0}
+              disabled={available === 0 || quantity > available}
               onClick={addToCart}
             >
               {available === 0 ? "INDISPONÍVEL" : "COMPRAR"}{" "}

@@ -64,7 +64,10 @@ const articles: LearnArticle[] = [
 
 function AprendaPage() {
   const [category, setCategory] = useState<LearnCategory>("Todos");
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return new URLSearchParams(window.location.search).get("assunto") ?? "";
+  });
   const [activeArticle, setActiveArticle] = useState<LearnArticle | null>(null);
   const filteredArticles = useMemo(() => {
     const term = search.trim().toLocaleLowerCase("pt-BR");

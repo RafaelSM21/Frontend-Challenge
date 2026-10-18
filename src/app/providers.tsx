@@ -1,6 +1,7 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import { queryClient } from "./queryClient";
+import { Toaster } from "@/components/ui/sonner";
 import { router } from "./router";
 import { useEffect } from "react";
 import { connectRealtime, disconnectRealtime } from "@/realtime/socket";
@@ -33,6 +34,7 @@ export function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
+      <Toaster />
     </QueryClientProvider>
   );
 }

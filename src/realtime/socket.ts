@@ -2,8 +2,7 @@ import { io, type Socket } from "socket.io-client";
 import { queryClient } from "@/app/queryClient";
 import { env } from "@/lib/env";
 import { getSession } from "@/features/auth/session";
-import type { Nft } from "@/mocks/db/types";
-import type { Order } from "@/lib/contracts";
+import type { Nft, Order } from "@/lib/contracts";
 
 type NftUpdatedEvent = {
   eventId: string;

@@ -11,6 +11,8 @@ import {
   type CartResponse,
 } from "@/features/cart/api";
 import { apiErrorMessage, type CartViewItem } from "@/lib/contracts";
+import { CommerceSkeleton } from "@/components/layout/commerce-skeleton";
+import { CartItemRow } from "@/components/layout/cart-item-row";
 import { getSession } from "@/features/auth/session";
 import { readCart, writeCart } from "@/features/cart/storage";
 
@@ -70,9 +72,10 @@ function CartPage() {
     ? cartQuery.data
     : {
         cart: {
-          items: visitorItems.map(({ nftId, quantity }) => ({
+          items: visitorItems.map(({ nftId, quantity, editionNumber }) => ({
             nftId,
             quantity,
+            editionNumber,
           })),
           version: 0,
         },
@@ -107,25 +110,38 @@ function CartPage() {
     enabled: Boolean(session && data?.items.length),
     queryFn: getCartQuote,
   });
-  const update = (id: string, quantity: number) => {
+  const update = (
+    id: string,
+    editionNumber: number | undefined,
+    quantity: number,
+  ) => {
     if (!data) return;
     const next = data.cart.items
-      .map((item) => (item.nftId === id ? { ...item, quantity } : item))
+      .map((item) =>
+        item.nftId === id && item.editionNumber === editionNumber
+          ? { ...item, quantity }
+          : item,
+      )
       .filter((item) => item.quantity > 0);
     if (session) saveCart.mutate({ items: next, coupon: data.cart.coupon });
     else
       writeCart(
         data.items
-          .filter((item) => item.nftId !== id || quantity > 0)
-          .map((item) => (item.nftId === id ? { ...item, quantity } : item)),
+          .filter(
+            (item) =>
+              item.nftId !== id ||
+              item.editionNumber !== editionNumber ||
+              quantity > 0,
+          )
+          .map((item) =>
+            item.nftId === id && item.editionNumber === editionNumber
+              ? { ...item, quantity }
+              : item,
+          ),
       );
   };
   if (session && cartQuery.isPending)
-    return (
-      <section className="commerce-empty container" aria-busy="true">
-        <h1>Carregando carrinho…</h1>
-      </section>
-    );
+    return <CommerceSkeleton variant="cart" label="Carregando carrinho…" />;
   if (!data?.items.length)
     return (
       <section className="commerce-empty container">
@@ -159,31 +175,14 @@ function CartPage() {
       <div className="cart-layout">
         <div className="cart-items">
           {data.items.map((item) => (
-            <article className="cart-item" key={item.nftId}>
-              <img src={item.image} alt={item.name} />
-              <div>
-                <span>{item.network.toUpperCase()}</span>
-                <h2>{item.name}</h2>
-                <strong>Ξ {item.priceEth} ETH</strong>
-                <button onClick={() => update(item.nftId, 0)}>Remover</button>
-              </div>
-              <div className="cart-quantity">
-                <button
-                  aria-label={`Diminuir ${item.name}`}
-                  onClick={() => update(item.nftId, item.quantity - 1)}
-                >
-                  −
-                </button>
-                <span>{item.quantity}</span>
-                <button
-                  aria-label={`Aumentar ${item.name}`}
-                  disabled={item.quantity >= item.available}
-                  onClick={() => update(item.nftId, item.quantity + 1)}
-                >
-                  +
-                </button>
-              </div>
-            </article>
+            <CartItemRow
+              key={`${item.nftId}-${item.editionNumber ?? "default"}`}
+              item={item}
+              disabled={saveCart.isPending}
+              onChange={(quantity) =>
+                update(item.nftId, item.editionNumber, quantity)
+              }
+            />
           ))}
         </div>
         <aside className="order-summary">

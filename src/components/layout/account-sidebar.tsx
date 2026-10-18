@@ -9,6 +9,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { Link, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
 import { clearSession } from "@/features/auth/session";
 
 const accountSections = [
@@ -25,6 +26,7 @@ type AccountSidebarProps = {
 
 export function AccountSidebar({ activePage }: AccountSidebarProps) {
   const navigate = useNavigate();
+  const [confirmLogout, setConfirmLogout] = useState(false);
 
   return (
     <aside className="account-sidebar">
@@ -56,16 +58,23 @@ export function AccountSidebar({ activePage }: AccountSidebarProps) {
           {label}
         </Link>
       ))}
-      <button
-        type="button"
-        onClick={() => {
-          clearSession();
-          void navigate({ to: "/" });
-        }}
-      >
+      <button type="button" onClick={() => setConfirmLogout(true)}>
         <LogOut aria-hidden="true" size={18} strokeWidth={1.6} />
         Sair
       </button>
+      {confirmLogout && (
+        <div className="logout-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setConfirmLogout(false); }}>
+          <section className="logout-modal" role="dialog" aria-modal="true" aria-labelledby="logout-modal-title" aria-describedby="logout-modal-description">
+            <span className="logout-modal-icon"><LogOut aria-hidden="true" size={22} /></span>
+            <h2 id="logout-modal-title">Deseja realmente sair?</h2>
+            <p id="logout-modal-description">Você precisará entrar novamente para acessar seu perfil e suas compras.</p>
+            <div className="logout-modal-actions">
+              <button type="button" className="logout-cancel" onClick={() => setConfirmLogout(false)}>Cancelar</button>
+              <button type="button" className="logout-confirm" onClick={() => { clearSession(); setConfirmLogout(false); void navigate({ to: "/" }); }}>Sim, sair</button>
+            </div>
+          </section>
+        </div>
+      )}
     </aside>
   );
 }

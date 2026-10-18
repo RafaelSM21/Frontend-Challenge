@@ -1,5 +1,5 @@
 import { http } from "@/lib/http";
-import type { Nft } from "@/mocks/db/types";
+import type { Nft } from "@/lib/contracts";
 
 export async function getNftDetails(nftId: string, signal?: AbortSignal) {
   return (await http.get<{ item: Nft }>(`/nfts/${nftId}`, { signal })).data

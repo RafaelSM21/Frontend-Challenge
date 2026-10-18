@@ -3,6 +3,8 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { Input, FieldError } from "@/components/ui/input";
+import { parseApiError } from "@/lib/api-error";
 import { AccountSidebar } from "@/components/layout/account-sidebar";
 import {
   apiErrorMessage,
@@ -45,6 +47,7 @@ function WalletsPage() {
   const [wallet, setWallet] = useState<WalletForm>(emptyWallet);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const walletsQuery = useQuery({
     queryKey: ["wallets", userId],
@@ -78,6 +81,18 @@ function WalletsPage() {
     },
 
     onError: (error) => {
+      const { code, message: text, fields } = parseApiError(error);
+      const mapped: Record<string, string> = { ...fields };
+      if (
+        (code === "INVALID_WALLET_ADDRESS" || code === "WALLET_EXISTS") &&
+        text
+      )
+        mapped.address = text;
+      if (Object.keys(mapped).length) {
+        setFieldErrors(mapped);
+        const first = Object.keys(mapped)[0];
+        if (first) document.getElementById(`wallet-${first}`)?.focus();
+      }
       setMessage(apiErrorMessage(error, "Não foi possível salvar a carteira."));
     },
   });
@@ -110,6 +125,7 @@ function WalletsPage() {
   function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage("");
+    setFieldErrors({});
 
     saveWalletMutation.mutate({
       input: wallet,
@@ -134,6 +150,7 @@ function WalletsPage() {
   }
 
   function cancelEdit() {
+    setFieldErrors({});
     setEditingId(null);
     setWallet(emptyWallet);
     setMessage("");
@@ -187,20 +204,32 @@ function WalletsPage() {
           <div className="account-form-grid">
             <label>
               Nome de exibição<span>*</span>
-              <input
+              <Input
+                id="wallet-displayName"
+                aria-label="Nome de exibição"
+                error={fieldErrors.displayName}
                 value={wallet.displayName}
                 onChange={(event) => update("displayName", event.target.value)}
                 required
               />
+              <FieldError id="wallet-displayName-error">
+                {fieldErrors.displayName}
+              </FieldError>
             </label>
 
             <label>
               Apelido da carteira<span>*</span>
-              <input
+              <Input
+                id="wallet-alias"
+                aria-label="Apelido da carteira"
+                error={fieldErrors.alias}
                 value={wallet.alias}
                 onChange={(event) => update("alias", event.target.value)}
                 required
               />
+              <FieldError id="wallet-alias-error">
+                {fieldErrors.alias}
+              </FieldError>
             </label>
 
             <label>
@@ -220,21 +249,33 @@ function WalletsPage() {
 
             <label>
               Nome do perfil<span>*</span>
-              <input
+              <Input
+                id="wallet-profileName"
+                aria-label="Nome do perfil"
+                error={fieldErrors.profileName}
                 value={wallet.profileName}
                 onChange={(event) => update("profileName", event.target.value)}
                 required
               />
+              <FieldError id="wallet-profileName-error">
+                {fieldErrors.profileName}
+              </FieldError>
             </label>
 
             <label>
               Endereço da carteira<span>*</span>
-              <input
+              <Input
+                id="wallet-address"
+                aria-label="Endereço da carteira"
+                error={fieldErrors.address}
                 placeholder="Endereço da carteira"
                 value={wallet.address}
                 onChange={(event) => update("address", event.target.value)}
                 required
               />
+              <FieldError id="wallet-address-error">
+                {fieldErrors.address}
+              </FieldError>
             </label>
 
             <label>
@@ -254,11 +295,15 @@ function WalletsPage() {
 
             <label>
               Nome ENS
-              <input
+              <Input
+                id="wallet-ens"
+                aria-label="Nome ENS"
+                error={fieldErrors.ens}
                 placeholder="colecionador.eth"
                 value={wallet.ens ?? ""}
                 onChange={(event) => update("ens", event.target.value)}
               />
+              <FieldError id="wallet-ens-error">{fieldErrors.ens}</FieldError>
             </label>
           </div>
 

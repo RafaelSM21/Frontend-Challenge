@@ -1,0 +1,8 @@
+# Fins de linha consistentes entre Windows, macOS e Linux (evita diffs gigantes).
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.zip binary

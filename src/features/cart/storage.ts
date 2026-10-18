@@ -6,6 +6,7 @@ export type CartItem = {
   network: string;
   quantity: number;
   available: number;
+  editionNumber?: number;
 };
 
 const CART_KEY = "kurio.cart.v1";
@@ -33,12 +34,9 @@ export function writeCart(items: CartItem[]) {
 
 export function addCartItem(item: CartItem) {
   const cart = readCart();
-  const current = cart.find((entry) => entry.nftId === item.nftId);
-  if (current)
-    current.quantity = Math.min(
-      current.available,
-      current.quantity + item.quantity,
-    );
-  else cart.push(item);
+  const current = cart.find(
+    (entry) => entry.nftId === item.nftId && entry.editionNumber === item.editionNumber,
+  );
+  if (!current) cart.push({ ...item, quantity: Math.max(1, item.quantity) });
   writeCart(cart);
 }

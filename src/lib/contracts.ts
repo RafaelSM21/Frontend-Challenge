@@ -13,6 +13,25 @@ export const catalogCategories = [
 ] as const;
 export type CatalogCategory = (typeof catalogCategories)[number]["value"];
 
+/** NFT como trafega na API REST e nos eventos Socket.IO (fonte única do contrato). */
+export interface Nft {
+  id: string;
+  name: string;
+  collection: string;
+  category: CatalogCategory;
+  creator: string;
+  description: string;
+  image: string;
+  priceEth: string;
+  network: Network;
+  edition: number;
+  editionTotal: number;
+  available: number;
+  createdAt: string;
+  traits: { traitType: string; value: string }[];
+  version: number;
+}
+
 export type ApiError = {
   error: { code: string; message: string; fields?: Record<string, string> };
 };
@@ -56,7 +75,7 @@ export type Wallet = {
 export type SaveWalletInput = Omit<Wallet, "id" | "connected">;
 export type ConnectWalletInput = { approved: boolean };
 
-export type CartItem = { nftId: string; quantity: number };
+export type CartItem = { nftId: string; quantity: number; editionNumber?: number };
 export type Cart = { items: CartItem[]; coupon?: string; version: number };
 export type CartInput = Omit<Cart, "version">;
 export type CartViewItem = CartItem & {

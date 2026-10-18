@@ -73,6 +73,7 @@ export const nftFixtures: Nft[] = fixtureCategories.map((category, index) => {
     priceEth: price,
     network,
     edition: 1 + (index % 12),
+    editionTotal: Math.max(1 + (index % 12), 1 + (index % 8)),
     available: index % 11 === 0 ? 0 : 1 + (index % 8),
     createdAt: new Date(Date.UTC(2026, 8, 1 + index)).toISOString(),
     traits: [
