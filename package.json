@@ -14,7 +14,8 @@
     "test:e2e:ui": "playwright test --ui",
     "test:visual": "playwright test e2e/visual.spec.ts",
     "test:visual:update": "playwright test e2e/visual.spec.ts --update-snapshots",
-    "audit:lighthouse": "node scripts/audit-lighthouse.mjs"
+    "audit:lighthouse": "node scripts/audit-lighthouse.mjs",
+    "audit:summary": "node scripts/summarize-lighthouse.mjs"
   },
   "dependencies": {
     "@fontsource/dm-mono": "^5.3.0",

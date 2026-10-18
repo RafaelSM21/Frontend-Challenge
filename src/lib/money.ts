@@ -1,9 +1,5 @@
 import Decimal from "decimal.js";
 
-/**
- * ETH trafega como string decimal. Nunca converta para number.
- * Precisão de 18 casas (wei), arredondamento para baixo na exibição.
- */
 Decimal.set({ precision: 40, rounding: Decimal.ROUND_DOWN });
 
 export type EthString = string;

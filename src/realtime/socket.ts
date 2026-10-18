@@ -1,4 +1,5 @@
-import { io, type Socket } from "socket.io-client";
+import type { Socket } from "socket.io-client";
+import { whenNetworkReady } from "@/lib/network-ready";
 import { queryClient } from "@/app/queryClient";
 import { env } from "@/lib/env";
 import { getSession } from "@/features/auth/session";
@@ -20,6 +21,7 @@ type OrderUpdatedEvent = {
 };
 type RealtimeWindow = Window & { __kurioSocketConnected?: boolean };
 let socket: Socket | undefined;
+let connectEpoch = 0;
 const seenVersions = new Map<string, number>();
 const seenEventIds = new Set<string>();
 const seenOrderVersions = new Map<string, number>();
@@ -85,36 +87,39 @@ function acceptOrder(event: OrderUpdatedEvent) {
   );
 }
 
-export function connectRealtime() {
-  if (socket?.connected) return socket;
-  // O mock WebSocket acompanha a origem da aplicação: Vite usa 5173 e o
-  // preview dos E2E usa 4173. Uma URL fixa do .env não pode sobrescrevê-la.
+export function connectRealtime(): void {
+  if (socket) return;
   const endpoint = env.mocksEnabled ? window.location.origin : env.socketUrl;
-  if (!endpoint) return undefined;
-  socket = io(endpoint, {
-    path: "/socket.io",
-    transports: ["websocket"],
-    autoConnect: true,
-  });
-  socket.on("connect", () => {
-    // Sinal de observabilidade para os testes aguardarem a conexão Socket.IO
-    // antes de disparar um evento pelo handler MSW. Não atualiza estado algum.
-    (window as RealtimeWindow).__kurioSocketConnected = true;
-    window.dispatchEvent(new Event("kurio:socket-connected"));
-    socket?.emit("subscribe", { userId: getSession()?.user.id });
-    reconcileActiveResources();
-    window.dispatchEvent(new Event("kurio:socket-reconciled"));
-  });
-  socket.on("disconnect", () => {
-    (window as RealtimeWindow).__kurioSocketConnected = false;
-    window.dispatchEvent(new Event("kurio:socket-disconnected"));
-  });
-  socket.on("nft.updated", accept);
-  socket.on("order.updated", acceptOrder);
-  return socket;
+  if (!endpoint) return;
+  const epoch = ++connectEpoch;
+  void (async () => {
+    await whenNetworkReady();
+    const { io } = await import("socket.io-client");
+    if (epoch !== connectEpoch || socket) return;
+    const connection = io(endpoint, {
+      path: "/socket.io",
+      transports: ["websocket"],
+      autoConnect: true,
+    });
+    socket = connection;
+    connection.on("connect", () => {
+      (window as RealtimeWindow).__kurioSocketConnected = true;
+      window.dispatchEvent(new Event("kurio:socket-connected"));
+      connection.emit("subscribe", { userId: getSession()?.user.id });
+      reconcileActiveResources();
+      window.dispatchEvent(new Event("kurio:socket-reconciled"));
+    });
+    connection.on("disconnect", () => {
+      (window as RealtimeWindow).__kurioSocketConnected = false;
+      window.dispatchEvent(new Event("kurio:socket-disconnected"));
+    });
+    connection.on("nft.updated", accept);
+    connection.on("order.updated", acceptOrder);
+  })();
 }
 
 export function disconnectRealtime() {
+  connectEpoch += 1;
   socket?.disconnect();
   socket = undefined;
   (window as RealtimeWindow).__kurioSocketConnected = false;

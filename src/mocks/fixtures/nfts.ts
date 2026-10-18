@@ -29,13 +29,13 @@ const creators = [
 ];
 const networks: Network[] = ["ethereum", "polygon", "solana"];
 const artwork = [
-  "/nfts/NFT%20Artwork%2003.png",
-  "/nfts/NFT%20Artwork%2004.png",
-  "/nfts/NFT%20Artwork%2005.png",
-  "/nfts/NFT%20Artwork%2004.png",
-  "/nfts/NFT%20Artwork%2010.png",
-  "/nfts/NFT%20Artwork%2010.png",
-  "/nfts/NFT%20Artwork%2010.png",
+  "/nfts/NFT%20Artwork%2003.webp",
+  "/nfts/NFT%20Artwork%2004.webp",
+  "/nfts/NFT%20Artwork%2005.webp",
+  "/nfts/NFT%20Artwork%2004.webp",
+  "/nfts/NFT%20Artwork%2010.webp",
+  "/nfts/NFT%20Artwork%2010.webp",
+  "/nfts/NFT%20Artwork%2010.webp",
 ];
 
 const categoryCounts: Record<CatalogCategory, number> = {

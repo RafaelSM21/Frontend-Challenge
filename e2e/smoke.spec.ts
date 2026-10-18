@@ -249,6 +249,7 @@ test("categorias combinam com rede e persistem após refresh", async ({
 
 test("migra NFTs salvos antes da taxonomia de categorias", async ({ page }) => {
   await page.goto("/");
+  await expect(page.locator(".nft-card").first()).toBeVisible();
   await page.evaluate(() => {
     const storageKey = "kurio.mock-db.v1";
     const saved = localStorage.getItem(storageKey);
@@ -287,7 +288,7 @@ test("migra NFTs salvos antes da taxonomia de categorias", async ({ page }) => {
         (nft: { category?: string }) => !nft.category,
       ).length,
       legacyImages: database.nfts?.filter(
-        (nft: { image?: string }) => nft.image?.endsWith(".webp"),
+        (nft: { image?: string }) => nft.image?.includes("nft-ape"),
       ).length,
     };
   });
@@ -880,7 +881,7 @@ test("avatar do perfil é persistido após refresh", async ({ page }) => {
   await page.getByLabel("Apelido da carteira").fill("avatar-test");
   await page
     .getByLabel("Enviar imagem de perfil")
-    .setInputFiles(resolve("public/nfts/NFT Artwork 03.png"));
+    .setInputFiles(resolve("e2e/fixtures/avatar.png"));
   await expect(page.locator(".avatar-placeholder img")).toHaveAttribute(
     "src",
     /^data:image\/jpeg/,

@@ -113,7 +113,7 @@ function RegisterPage() {
             </section>
             <img
               className="auth-backdrop-feature"
-              src="/nfts/NFT%20Artwork%2003.png"
+              src="/nfts/NFT%20Artwork%2003.webp"
               alt=""
             />
             <div className="auth-backdrop-sidebar">
@@ -131,12 +131,12 @@ function RegisterPage() {
             </div>
             <div className="auth-backdrop-grid">
               {[
-                ["Emerald Ape #042", "/nfts/NFT%20Artwork%2003.png"],
-                ["Sage Nomad #009", "/nfts/NFT%20Artwork%2004.png"],
-                ["Neon Vessel #552", "/nfts/NFT%20Artwork%2010.png"],
-                ["Cosmic Bloom #118", "/nfts/NFT%20Artwork%2004.png"],
-                ["Violet Nomad #314", "/nfts/NFT%20Artwork%2010.png"],
-                ["Ivory Baron #088", "/nfts/NFT%20Artwork%2005.png"],
+                ["Emerald Ape #042", "/nfts/NFT%20Artwork%2003.webp"],
+                ["Sage Nomad #009", "/nfts/NFT%20Artwork%2004.webp"],
+                ["Neon Vessel #552", "/nfts/NFT%20Artwork%2010.webp"],
+                ["Cosmic Bloom #118", "/nfts/NFT%20Artwork%2004.webp"],
+                ["Violet Nomad #314", "/nfts/NFT%20Artwork%2010.webp"],
+                ["Ivory Baron #088", "/nfts/NFT%20Artwork%2005.webp"],
               ].map(([title, image]) => (
                 <article key={title}>
                   <img src={image} alt="" />

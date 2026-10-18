@@ -1,4 +1,3 @@
-
 node_modules/
 dist/
 .vercel/
@@ -9,8 +8,6 @@ dist/
 .env.*
 !.env.example
 !.env.mock
-!.env.mock
-.env.mock
 
 # Arquivos temporários e gerados
 .tanstack/tmp/
@@ -23,3 +20,5 @@ Thumbs.db
 
 # Zips soltos (ex.: cópias dos relatórios) não entram no repositório
 *.zip
+
+vite.config.ts.timestamp-*.mjs

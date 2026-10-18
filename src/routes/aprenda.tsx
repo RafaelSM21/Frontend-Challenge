@@ -21,42 +21,42 @@ const articles: LearnArticle[] = [
   {
     id: "nft-basico", category: "Começando", title: "NFT sem mistério: o que você realmente está comprando?",
     summary: "Entenda o token, a obra digital e o que a compra garante — sem complicar o assunto.", readTime: "5 min",
-    image: "/nfts/NFT%20Artwork%2005.png",
+    image: "/nfts/NFT%20Artwork%2005.webp",
     body: ["NFT é um registro digital único em uma blockchain. Ele pode apontar para uma obra, um item de jogo, um ingresso ou outro ativo digital.", "Comprar um NFT não significa automaticamente adquirir os direitos autorais da imagem. Esses direitos dependem dos termos definidos pelo criador ou pela coleção.", "Antes de comprar, confira a coleção, o endereço do contrato quando disponível, a página do criador e as condições de uso."],
     takeaway: "Pense no NFT como um certificado digital: leia o que ele representa antes de decidir."
   },
   {
     id: "carteira", category: "Começando", title: "Sua primeira carteira digital",
     summary: "Para que serve uma carteira, como guardar sua frase de recuperação e o que nunca compartilhar.",
-    readTime: "6 min", image: "/nfts/NFT%20Artwork%2003.png",
+    readTime: "6 min", image: "/nfts/NFT%20Artwork%2003.webp",
     body: ["Uma carteira permite gerenciar endereços e assinar transações. Em geral, ela não guarda a arte em si: registra e autoriza movimentações associadas aos seus ativos.", "A frase de recuperação dá acesso à carteira. Guarde-a offline em um local seguro e nunca a envie por mensagem, formulário ou para alguém que diga ser do suporte.", "Use apenas extensões e aplicativos obtidos nos canais oficiais. Confira a rede e o endereço antes de confirmar uma transação."],
     takeaway: "Quem possui sua frase de recuperação pode controlar seus ativos. A Kurio nunca precisa dela."
   },
   {
     id: "colecao", category: "Colecionadores", title: "Como avaliar uma coleção antes de comprar",
     summary: "Aprenda a observar procedência, atividade do criador, utilidade e sinais de alerta.",
-    readTime: "4 min", image: "/nfts/NFT%20Artwork%2004.png",
+    readTime: "4 min", image: "/nfts/NFT%20Artwork%2004.webp",
     body: ["Comece pela origem: visite o perfil do artista, compare links oficiais e verifique se a coleção corresponde àquela divulgada pelo criador.", "Leia a descrição e os termos. Volume, preço e raridade isoladamente não garantem qualidade, autenticidade nem valorização futura.", "Desconfie de urgência artificial, promessas de lucro garantido, links inesperados e pedidos para assinar transações que você não entende."],
     takeaway: "Faça sua própria pesquisa. NFTs podem perder valor e não há retorno garantido."
   },
   {
     id: "cunhagem", category: "Criadores", title: "Da arte à blockchain: entendendo a cunhagem",
     summary: "O que acontece ao transformar uma criação em um token e quais detalhes preparar antes de publicar.",
-    readTime: "7 min", image: "/nfts/NFT%20Artwork%2010.png",
+    readTime: "7 min", image: "/nfts/NFT%20Artwork%2010.webp",
     body: ["Cunhar é registrar um token na blockchain. O processo pode envolver uma taxa de rede, dependendo da blockchain e do método utilizado.", "Antes de publicar, prepare o arquivo final, o título, a descrição, os atributos e os termos de uso. Use apenas conteúdo sobre o qual você tem os direitos necessários.", "Revise a rede, os custos e todos os dados antes de confirmar. Depois, mantenha os links oficiais da coleção organizados para seu público."],
     takeaway: "Uma apresentação clara e informações verificáveis ajudam o público a entender seu trabalho."
   },
   {
     id: "direitos", category: "Criadores", title: "NFT e direitos autorais não são a mesma coisa",
     summary: "Como comunicar com clareza o que o colecionador recebe junto com a obra.",
-    readTime: "5 min", image: "/nfts/NFT%20Artwork%2005.png",
+    readTime: "5 min", image: "/nfts/NFT%20Artwork%2005.webp",
     body: ["A titularidade de um token não transfere automaticamente os direitos autorais da obra associada.", "O criador deve explicar quais usos são permitidos: exibição pessoal, uso comercial, licenciamento ou outras condições específicas.", "Deixe os termos acessíveis antes da compra e procure orientação jurídica quando for definir uma licença comercial."],
     takeaway: "Explique os direitos concedidos em linguagem simples e por escrito."
   },
   {
     id: "golpes", category: "Segurança", title: "5 sinais de alerta para evitar golpes com NFTs",
     summary: "Links falsos, suporte que pede segredo, promessas de lucro e outras armadilhas comuns.",
-    readTime: "4 min", image: "/nfts/NFT%20Artwork%2003.png",
+    readTime: "4 min", image: "/nfts/NFT%20Artwork%2003.webp",
     body: ["Nunca compartilhe sua frase de recuperação ou chave privada, mesmo que a pessoa alegue trabalhar na plataforma.", "Confira o endereço do site antes de conectar sua carteira. Evite links recebidos inesperadamente e anúncios que imitam projetos conhecidos.", "Leia a solicitação da carteira com atenção. Se não entender o que está autorizando, cancele e procure a documentação oficial por conta própria."],
     takeaway: "Pare, confira por outro canal e não assine uma transação sob pressão."
   },

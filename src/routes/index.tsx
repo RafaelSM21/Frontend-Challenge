@@ -32,7 +32,7 @@ const journalArticles = [
     readingTime: "5 MIN",
     title: "Como funciona a propriedade de NFTs",
     summary: "Entenda o token, a obra digital e o que a compra garante.",
-    image: "/nfts/NFT%20Artwork%2005.png",
+    image: "/nfts/NFT%20Artwork%2005.webp",
     learnQuery: "NFT sem mistério",
   },
   {
@@ -40,7 +40,7 @@ const journalArticles = [
     readingTime: "2 MIN",
     title: "Artistas digitais para acompanhar",
     summary: "Conheça criadores que moldam a cultura digital.",
-    image: "/nfts/NFT%20Artwork%2003.png",
+    image: "/nfts/NFT%20Artwork%2003.webp",
     creators: true,
   },
   {
@@ -48,7 +48,7 @@ const journalArticles = [
     readingTime: "3 MIN",
     title: "Raridade, atributos e procedência",
     summary: "Entenda procedência, utilidade e como avaliar uma coleção.",
-    image: "/nfts/NFT%20Artwork%2004.png",
+    image: "/nfts/NFT%20Artwork%2004.webp",
     learnQuery: "Como avaliar uma coleção",
   },
   {
@@ -56,7 +56,7 @@ const journalArticles = [
     readingTime: "2 MIN",
     title: "Como proteger sua carteira",
     summary: "Proteja sua carteira, seus ativos e sua identidade.",
-    image: "/nfts/NFT%20Artwork%2010.png",
+    image: "/nfts/NFT%20Artwork%2010.webp",
     learnQuery: "5 sinais de alerta",
   },
 ];
@@ -121,7 +121,7 @@ function HomePage() {
       <section className="hero container">
         <div className="hero-copy">
           <div className="eyebrow">
-            <span className="eyebrow-line" /> MARKETPLACE DE ARTE DIGITAL
+            <span className="eyebrow-line" /> MARKETPLACE DE BEM-VINDO À KURIO
           </div>
           <h1>
             SEJA DONO DO FUTURO
@@ -155,7 +155,7 @@ function HomePage() {
         <div className="hero-art-wrap">
           <div className="hero-art-frame">
             <img
-              src="/nfts/NFT%20Artwork%2003.png"
+              src="/nfts/NFT%20Artwork%2003.webp"
               alt="Arte digital de um macaco colecionável usando óculos e jaqueta verde"
               fetchPriority="high"
             />
@@ -291,7 +291,7 @@ function HomePage() {
                 params={{ nftId: featuredNft?.id ?? "nft-001" }}
               >
                 <img
-                  src={featuredNft?.image ?? "/nfts/NFT%20Artwork%2004.png"}
+                  src={featuredNft?.image ?? "/nfts/NFT%20Artwork%2004.webp"}
                   alt={featuredNft?.name ?? "NFT em destaque"}
                 />
               </Link>
@@ -387,6 +387,7 @@ function HomePage() {
                         src={nft.image}
                         alt={`Arte da obra ${nft.name}`}
                         loading={index > 3 ? "lazy" : "eager"}
+                        fetchPriority={index === 0 ? "high" : undefined}
                       />
                       <span className="nft-edition">
                         EDIÇÃO #{String(index + 1).padStart(3, "0")}
@@ -481,7 +482,7 @@ function HomePage() {
       >
         <article className="home-promo">
           <img
-            src="/nfts/NFT%20Artwork%2003.png"
+            src="/nfts/NFT%20Artwork%2003.webp"
             alt="Arte digital de um macaco"
           />
           <div>
@@ -494,7 +495,7 @@ function HomePage() {
         </article>
         <article className="home-promo">
           <img
-            src="/nfts/NFT%20Artwork%2005.png"
+            src="/nfts/NFT%20Artwork%2005.webp"
             alt="Arte digital de um colecionável em tons escuros"
           />
           <div>
