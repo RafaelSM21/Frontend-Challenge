@@ -4,7 +4,7 @@ Este documento descreve como a solução está organizada, os contratos entre as
 
 ## 1. Camadas
 
-```
+```text
 UI (routes/, components/)
   └─ features/<domínio>/api.ts     funções tipadas que chamam o cliente HTTP
        └─ lib/http.ts (Axios)      único cliente REST; injeta token; trata SESSION_EXPIRED
@@ -19,6 +19,35 @@ Regras que a estrutura garante:
 - **Roteamento** por arquivos com TanStack Router (`src/routes`, `routeTree.gen.ts` gerado). Busca, filtros, ordenação e paginação são *search params* validados com Zod (`features/catalog/search.ts`, `features/market/search.ts`); valores inválidos caem no padrão em vez de quebrar a página.
 - **Estado remoto** exclusivamente em TanStack Query. Estado local de componente só para UI efêmera (drawer aberto, rascunho de campo).
 - **Componentes de interface** em `src/components/ui` seguem o padrão shadcn/ui sobre Radix (ver §8).
+
+## 1.1 Páginas e rotas da aplicação
+
+A navegação é definida por arquivos em `src/routes/` e pelo TanStack Router. A lista abaixo reflete as rotas presentes no código; páginas auxiliares e seus limites estão descritos na seção 9.
+
+| Rota | Página / responsabilidade | Observações |
+|---|---|---|
+| `/` | Início | Descoberta de NFTs, busca e filtros em destaque. |
+| `/mercado` | Mercado | Catálogo com busca, filtros e ordenação. |
+| `/nfts/$nftId` | Detalhe do NFT | Detalhes do item e ações relacionadas ao carrinho/favoritos. |
+| `/colecoes/$collectionName` | Coleção | Descoberta de NFTs associados a uma coleção. |
+| `/criadores` | Criadores | Página-base da área de criadores. |
+| `/criadores/` | Índice de criadores | Lista agregada de criadores presentes nos dados. |
+| `/criadores/$creatorName` | Detalhe do criador | NFTs associados ao criador; sem biografia ou métricas não disponíveis nos dados. |
+| `/carrinho` | Carrinho | Itens, quantidades e aplicação/remoção de cupom; aceita visitante. |
+| `/pagamento` | Pagamento / checkout | Cotação da API mock, seleção de carteira e criação de pedido. |
+| `/pedidos/$orderId` | Acompanhamento do pedido | Consulta do pedido e atualização por REST/Socket.IO. |
+| `/login` | Login | Autenticação simulada pelo serviço mock. |
+| `/cadastro` | Cadastro | Criação de conta simulada pelo serviço mock. |
+| `/perfil` | Perfil do colecionador | Consulta e edição dos dados do perfil. |
+| `/carteiras` | Carteiras | Cadastro, edição, remoção e conexão simulada de carteiras. |
+| `/interesse` | Interesses / favoritos | Exibe os NFTs favoritados pelo usuário autenticado. |
+| `/ofertas` | Ofertas | Apresenta o cupom demonstrativo `KURIO10`; a validade é verificada ao aplicá-lo no carrinho. |
+| `/aprenda` | Aprenda | Conteúdo editorial estático e filtros locais; sem integração externa. |
+| `/atividade` | Atividade | Página auxiliar em estado vazio, sem listagem de pedidos no backend mock. |
+| `/downloads` | Downloads | Página auxiliar em estado vazio, sem serviço de downloads implementado. |
+| `/suporte` | Suporte | Formulário demonstrativo que salva a solicitação no `localStorage`; não envia mensagens a uma equipe. |
+
+`/login`, `/cadastro` e as rotas privadas usam diálogos/controles e redirecionamentos descritos na seção de sessão. `/perfil`, `/carteiras`, `/pagamento` e `/pedidos/$orderId` exigem sessão. O carrinho também pode ser usado como visitante, com mescla após autenticação.
 
 ## 2. Contratos REST
 
@@ -40,24 +69,13 @@ Base: `/api`. Erros seguem `{ error: { code, message, fields? } }` (`ApiError`).
 
 Endpoints de apoio (somente no ambiente de mocks): `GET /health`, `POST /__mock/reset`, `POST /__mock/nfts/:nftId/update`, `POST /__mock/nfts/:nftId/event`, `POST /__mock/orders/:orderId/update`, `POST /__mock/orders/:orderId/event`, `POST /__mock/socket/disconnect`.
 
-**Tipos principais** (`src/lib/contracts.ts`, incluindo `Nft`, que o app e o mock compartilham; o mock só os reexporta): `SessionResponse`, `Profile`, `Wallet`, `Cart` (com `version`), `CartViewItem`, `Quote` (`quoteId`, `cartVersion`, `subtotalEth`, `discountEth`, `networkFeeEth`, `totalEth`, `expiresAt`), `Order` (`status`, `version`, `transactionRef`, `quote`, `items`, `walletAddress`, `walletNetwork`).
+**Tipos principais** (`src/lib/contracts.ts`): `SessionResponse`, `Profile`, `Wallet`, `Cart` (com `version`), `CartViewItem`, `Quote` (`quoteId`, `cartVersion`, `subtotalEth`, `discountEth`, `networkFeeEth`, `totalEth`, `expiresAt`), `Order` (`status`, `version`, `transactionRef`, `quote`, `items`, `walletAddress`, `walletNetwork`).
 
 **Valores monetários.** ETH trafega como *string* decimal e é calculado com `decimal.js` (`lib/money.ts`: precisão de 40 dígitos, arredondamento para baixo). Quantidades são inteiras. A cotação do servidor é a referência para o pedido.
 
-**Códigos de erro por categoria**
-
-| Situação | HTTP | Códigos |
-|---|---|---|
-| Validação | 400 / 409 / 422 | `INVALID_INPUT`, `INVALID_PROFILE`, `INVALID_PASSWORD`, `INVALID_WALLET_ADDRESS`, `EMAIL_EXISTS`, `WALLET_EXISTS`, `INVALID_COUPON`, `COUPON_EXPIRED` |
-| Sessão inválida/expirada | 401 | `SESSION_EXPIRED`, `UNAUTHORIZED`, `INVALID_CREDENTIALS` |
-| Recurso inexistente | 404 | `NFT_NOT_FOUND`, `ORDER_NOT_FOUND`, `WALLET_NOT_FOUND`, `CART_NOT_FOUND` |
-| Conflito de disponibilidade/cotação | 409 | `AVAILABILITY_CONFLICT`, `QUOTE_OUTDATED`, `EDITION_DUPLICATE`, `WALLET_NOT_CONNECTED`, `ORDER_TERMINAL` |
-| Idempotência | 400 / 409 | `MISSING_IDEMPOTENCY_KEY`, `IDEMPOTENCY_CONFLICT` |
-| Falha transitória | 503 / rede | `SERVICE_UNAVAILABLE`, `HttpResponse.error()` |
-
 ### Idempotência de pedidos
 
-`POST /orders` exige `Idempotency-Key`. Para a mesma chave, o mesmo `quoteId` e a mesma carteira, o servidor devolve **o mesmo pedido** (200); com conteúdo diferente, `409 IDEMPOTENCY_CONFLICT`. O cliente guarda a chave, a carteira e a cotação em `kurio.checkout-resume` (por usuário) antes de enviar; por isso um *timeout* (cenário `timeout-after-order`), um novo clique ou um refresh reenviam a mesma chave e recuperam o pedido sem duplicar a compra. Assim que o `POST /orders` devolve um pedido (em qualquer estado), a chave é descartada e a tela passa a `/pedidos/:orderId`, que consulta o pedido por `GET /orders/:id`; um pedido `pending` é então acompanhado por `order.updated` e reconciliado por REST.
+`POST /orders` exige `Idempotency-Key`. Para a mesma chave, o mesmo `quoteId` e a mesma carteira, o servidor devolve o mesmo pedido; com conteúdo diferente, retorna `409 IDEMPOTENCY_CONFLICT`. O cliente guarda a chave, a carteira e a cotação em `kurio.checkout-resume` por usuário antes de enviar. Assim, um *timeout*, um novo clique ou um refresh podem recuperar o pedido sem duplicar a compra.
 
 ## 3. Eventos Socket.IO
 
@@ -65,108 +83,91 @@ Cliente: `socket.io-client` em `src/realtime/socket.ts`, transporte `websocket`,
 
 | Evento | Payload | Efeito no cliente |
 |---|---|---|
-| `nft.updated` | `{ eventId, resourceId, version, item }` | atualiza `["nft", id]`, invalida catálogo, carrinho e cotação ativos |
-| `order.updated` | `{ eventId, resourceId, userId, status, version, order }` | atualiza `["order", userId, id]`; a tela de pedido mostra confirmação ou recusa |
+| `nft.updated` | `{ eventId, resourceId, version, item }` | Atualiza o cache do NFT e invalida catálogo, carrinho e cotação ativos. |
+| `order.updated` | `{ eventId, resourceId, userId, status, version, order }` | Atualiza o cache do pedido; a tela mostra confirmação ou recusa. |
 
 Regras de aceitação:
 
-1. **Duplicatas:** `eventId` já visto é descartado.
-2. **Eventos antigos:** `version` menor ou igual à última conhecida (vista por evento ou presente no cache) é descartada; um estado mais recente nunca regride.
-3. **Isolamento por usuário:** `order.updated` só é aplicado se `event.userId` for o da sessão atual e se o payload for coerente (`resourceId === order.id`, `status === order.status`, `version === order.version`). O servidor mock só entrega o evento a conexões que enviaram `subscribe` com aquele `userId`.
-4. **Ciclo de vida:** trocar ou encerrar a sessão chama `disconnectRealtime()` (fecha o socket, limpa versões e IDs vistos) e reconecta apenas se houver sessão.
-5. **Reconexão:** no evento `connect` o cliente reenvia `subscribe` e **reconcilia por REST** (ver §6).
+1. **Duplicatas:** eventos com `eventId` já visto são descartados.
+2. **Eventos antigos:** versões menores ou iguais à última conhecida são descartadas.
+3. **Isolamento por usuário:** eventos de pedido só são aplicados se o usuário e os dados do evento corresponderem à sessão atual.
+4. **Ciclo de vida:** trocar ou encerrar a sessão desconecta o socket e limpa o estado de eventos vistos.
+5. **Reconexão:** o cliente reenvia a inscrição e reconcilia o estado por REST.
 
 Pedidos `confirmed` e `declined` são terminais.
 
 ## 4. Sessão
 
-- Armazenada em `localStorage` (`kurio.session`: usuário, token, `expiresAt`). `getSession()` descarta sessões vencidas localmente.
-- O interceptor do Axios injeta o `Bearer` e, ao receber `SESSION_EXPIRED`, grava a rota atual em `kurio.resume-path`, limpa a sessão e dispara `kurio:session-expired`. Se a requisição com 401 acontece quando o usuário já está em `/login` ou `/cadastro`, nada é gravado, para não devolver o usuário ao login depois de entrar. Após novo login, o usuário retorna à rota salva; o contexto do checkout é preservado em `kurio.checkout-resume`.
-- A sessão é recuperável após refresh. As rotas `/pagamento`, `/perfil`, `/carteiras` e `/pedidos/:orderId` redirecionam ao login (`beforeLoad`) quando não há sessão; `/carrinho` aceita visitante, e favoritos exigem login na ação.
-- **Logout e troca de usuário:** o evento `kurio:session-change` remove do cache as queries privadas (`profile`, `wallets`, `favorites`, `cart`, `quote`, `order`) e reinicia o socket. Todas essas chaves incluem o `userId`, então dados de um usuário nunca são lidos por outro. Há teste E2E de troca de usuário sem recarregar a página.
-- Senhas: o mock guarda apenas um *hash* curto de 8 caracteres (`passwordHash`), nunca a senha em claro. É uma simulação — não é um mecanismo de segurança (ver §9).
+- A sessão é armazenada em `localStorage` (`kurio.session`: usuário, token e `expiresAt`); sessões vencidas são descartadas localmente.
+- O interceptor do Axios injeta o `Bearer` e trata `SESSION_EXPIRED`, limpando a sessão e guardando a rota para retomada quando aplicável.
+- A sessão pode ser recuperada após refresh.
+- `/perfil`, `/carteiras`, `/pagamento` e `/pedidos/$orderId` exigem sessão.
+- O carrinho pode ser usado como visitante e mesclado após autenticação.
 
-## 5. Carrinho
+## 5. Carrinho e checkout
 
-- **Visitante:** itens em `localStorage` (`kurio.cart.v1`) via `features/cart/storage.ts`.
-- **Autenticado:** o carrinho vive na API (`GET/PUT /cart`), com `version` incrementada a cada alteração. Ao entrar ou cadastrar, o carrinho do visitante é enviado a `POST /cart/merge` e o resultado passa a ser a fonte da verdade.
-- A API valida disponibilidade por NFT e edição (`AVAILABILITY_CONFLICT`, `INVALID_EDITION`, `EDITION_DUPLICATE`).
-- O resumo (subtotal, desconto, taxa de rede, total) vem sempre de `POST /checkout/quote`, nunca de cálculo local. A chave da cotação inclui `cart.version`, então mudar o carrinho gera nova cotação.
-- Alterações de preço/disponibilidade recebidas por `nft.updated` invalidam carrinho e cotação; a interface informa a mudança e atualiza o resumo.
-- Depois de um pedido confirmado, o mock esvazia o carrinho. Como o pedido cobre o carrinho inteiro (a cotação é do carrinho todo), isso equivale a remover exatamente os itens e quantidades comprados; em falha ou recusa o carrinho é preservado.
+- O carrinho é gerido pela API mock e pelo TanStack Query.
+- Alterações de quantidade, cupom e disponibilidade são validadas pelo serviço mock.
+- A cotação é obtida pelo endpoint `/checkout/quote`.
+- Mudanças de preço ou disponibilidade invalidam a cotação e exigem nova confirmação.
+- A criação do pedido usa chave de idempotência para reduzir o risco de duplicação.
+- O pedido pode ser acompanhado por REST e Socket.IO.
+- O pagamento é demonstrativo; não movimenta dinheiro real nem executa transações blockchain.
 
-## 6. Cache e reconciliação REST ↔ Socket.IO
+## 6. Cache e sincronização
 
-**Política (`app/queryClient.ts`)**
-
-| Item | Valor | Motivo |
-|---|---|---|
-| `staleTime` | 30 s | o catálogo tolera pequena defasagem; o socket invalida o que muda |
-| `gcTime` | 5 min | navegação de ida e volta sem refetch desnecessário |
-| `retry` (queries) | até 2 vezes, **nunca em 4xx** | só falhas transitórias merecem nova tentativa |
-| `retry` (mutations) | desligado | evita operações duplicadas; pedidos usam idempotência explícita |
-| `refetchOnWindowFocus` | desligado | atualização é guiada por eventos e invalidação, não por foco |
-
-**Chaves de query:** `["nfts", search]` (os parâmetros da URL entram na chave), `["nft", id]`, `["cart", userId]`, `["quote", userId, cartVersion]`, `["order", userId, orderId]`, `["favorites", userId]`, `["wallets", userId]`, `["profile", userId]`, `["market-collections"]`, `["market-creators"]`.
-
-**Respostas fora de ordem:** o `queryFn` do catálogo recebe o `AbortSignal` do TanStack Query e o repassa ao Axios; como a chave inclui os parâmetros, uma resposta atrasada de uma busca anterior nunca sobrescreve a atual (cenários `out-of-order` e `variable-latency`).
-
-**Atualização otimista:** favoritos (`routes/nfts.$nftId.tsx`) — `onMutate` cancela consultas, grava o novo estado e guarda o anterior; `onError` faz *rollback* e informa a falha (cenário `favorite-failure`).
-
-**Reconciliação.** Após cada evento aceito e a cada `connect`/reconexão, `reconcileActiveResources()` invalida com `refetchType: "active"` as queries `nfts`, `cart`, `quote` e `order` do usuário atual. O evento atualiza o cache de imediato (resposta rápida) e a REST confirma em seguida (fonte da verdade). Se um evento for perdido durante uma queda, a reconexão corrige o estado; pedidos pendentes são recuperados por `GET /orders/:id`.
+TanStack Query gerencia o estado remoto. Eventos Socket.IO atualizam o cache imediatamente, e consultas REST confirmam o estado. Na reconexão, o cliente reconcilia dados para recuperar eventos perdidos. Os dados de pedido são separados por usuário.
 
 ## 7. Mocking com MSW
 
-- **Inicialização (`main.tsx`):** o Service Worker do MSW sobe **em paralelo** ao carregamento do app, e o app é renderizado sem esperar por ele (shell e skeletons aparecem primeiro). Uma porta de rede (`src/lib/network-ready.ts`) faz o cliente Axios e o Socket.IO aguardarem o MSW antes da primeira requisição, então nenhuma chamada escapa para a origem real. O `socket.io-client` captura o `WebSocket` global ao ser importado, por isso é carregado sob demanda em `realtime/socket.ts`, só depois do start do MSW (uma conexão pedida e cancelada durante o carregamento é descartada). A porta não carrega dados nem regras de negócio: é só um sinal de "rede pronta". Ativação por `VITE_ENABLE_MOCKS=true`; o build de demonstração usa `--mode mock`, que lê o `.env.mock` versionado.
-- **Pré-carregamento no HTML (`vite.config.ts`):** o plugin `kurio-preload-boot-assets` injeta `modulepreload` para os chunks do MSW e do app (e suas dependências) e `preload` para as fontes Roboto 400/500/700. O chunk do MSW e as fontes entram com `fetchpriority="low"`, para não disputar banda com o JavaScript do app em rede lenta. Um script inline escolhe pelo `pathname` os chunks da rota (`/` e `/nfts/:id`) e os pré-carrega. Sem isso esses arquivos só eram descobertos depois do JS de entrada (cascata) e, com `font-display: optional`, a primeira visita caía na fonte de fallback. Efeito medido em [docs/AUDITORIA.md](./docs/AUDITORIA.md).
-- **Banco** em `src/mocks/db`, persistido em `localStorage` para sobreviver a refresh; `POST /api/__mock/reset` restaura as fixtures (`src/mocks/fixtures`, 2 usuários e catálogo variado).
-- **Cenários** (`VITE_MOCK_SCENARIO` ou `?mockScenario=`): `default`, `empty-catalog`, `server-error`, `connection-failure`, `slow-network`, `variable-latency`, `out-of-order`, `session-expired`, `favorite-failure`, `price-change`, `availability-change`, `stock-conflict`, `payment-declined`, `order-pending`, `timeout-after-order`. O `slow-network` atrasa também o carrinho e a cotação em 1,2 s, para os skeletons dessas telas ficarem visíveis nos testes.
-- **Transporte Socket.IO:** `ws.link(origin)` + `toSocketIo()` de `@mswjs/socket.io-binding`. O MSW remove o prefixo `/socket.io/` do handshake, então os canais apontam para a origem da página. As mudanças simuladas passam pelo mesmo estado do REST (`db.updateNft` → `emitNftUpdated`), e os testes exercitam o `socket.io-client` real.
-- **Limitações do ambiente de mocks:** não existe servidor Socket.IO — o canal só funciona enquanto a página está aberta e o Service Worker está ativo; não há salas, *acknowledgements* nem *polling* (apenas `websocket`); as origens `ws://localhost:5173`/`4173` e a origem atual são registradas explicitamente; a desconexão é simulada fechando o lado cliente do interceptor; o banco é por navegador (não compartilhado entre abas de usuários diferentes além do `localStorage`).
+- O MSW intercepta as chamadas REST e o transporte Socket.IO no ambiente de demonstração.
+- Os dados mock são mantidos em `src/mocks`, com fixtures e banco persistido em `localStorage`.
+- O cenário é configurado por `VITE_MOCK_SCENARIO` ou `?mockScenario=`.
+- Cenários disponíveis incluem catálogo vazio, erro de servidor, falha de conexão, rede lenta, sessão expirada, falha ao favoritar, mudança de preço, conflito de disponibilidade, pagamento recusado, pedido pendente e timeout após criação do pedido.
+- O Socket.IO usa `ws.link` e `@mswjs/socket.io-binding`; os testes exercitam o cliente `socket.io-client`.
+- O mock não é um backend de produção: não há servidor Socket.IO real, salas ou persistência compartilhada entre usuários em dispositivos diferentes.
 
-## 8. Interface compartilhada
+## 8. Interface compartilhada e acessibilidade
 
-**Componentes shadcn/ui.** `src/components/ui` contém `Button`, `Dialog`, `Input`, `Label` e `Sonner`, no padrão shadcn sobre Radix (`@radix-ui/react-dialog`, `@radix-ui/react-label`, `sonner`), com as classes e a identidade visual do projeto.
+**Componentes shadcn/ui.** `src/components/ui` contém `Button`, `Dialog`, `Input`, `Label` e `Sonner`, adaptados ao padrão visual do projeto.
 
-- **Login e cadastro** são `Dialog` do Radix: foco inicial no primeiro campo, Tab preso, Escape fecha e o foco volta a quem abriu.
-- **Drawer de filtros no mobile** é um `Dialog` do Radix enquanto está aberto; fechado e no desktop é o mesmo `aside` do painel. O título do `Dialog` é um `span` oculto, para não duplicar o título visível "Filtros". Ao fechar, o foco volta ao botão "Filtros" (`onCloseAutoFocus`, pelo `aria-controls`).
-- **`Input`** define `aria-invalid` e `aria-describedby` quando há erro; a mensagem vem num `FieldError` com `role="alert"`. Isso vale para login, cadastro, perfil, carteiras e pagamento (carteira não selecionada ou desconectada, com foco movido ao campo).
-- **`Toaster` (Sonner)** está montado em `app/providers.tsx` e informa a falha ao adicionar ao carrinho no detalhe do NFT. As demais mutações (perfil, carteiras, favoritos) mantêm mensagens `role="status"` na própria tela.
-- Nos formulários de perfil e carteiras, os campos dentro de `<label>` têm `aria-label` com o mesmo texto, para que a mensagem de erro não entre no nome acessível do campo.
+- Login e cadastro usam diálogos com gerenciamento de foco.
+- O drawer de filtros mobile usa `Dialog` do Radix.
+- Campos com erro usam `aria-invalid`, `aria-describedby` e mensagens com `role="alert"`.
+- Mensagens de estado usam `role="status"`; notificações usam Sonner.
+- Skeletons respeitam `prefers-reduced-motion`.
+- Testes verificam overflow horizontal em diferentes larguras de tela.
 
-**Skeletons.** Catálogo, carrinho e pagamento têm skeleton com *shimmer* (`commerce-skeleton.tsx` para carrinho e pagamento), com as mesmas classes de layout das telas reais para não deslocar o conteúdo. O *shimmer* é desligado com `prefers-reduced-motion`. Os testes E2E conferem posição do título, largura do resumo e altura dos itens.
-
-**Painel de filtros único.** Início, Mercado e Criadores renderizam `FilterPanel` + `FilterToolbar` (`src/components/catalog-filters.tsx`), com o markup e as classes do painel do Início (`filters`, `filter-group`, `filter-option`, `price-slider`, drawer mobile). Cada tela só declara seus grupos:
-
-| Tela | Busca | Grupos de checkbox | Extras |
-|---|---|---|---|
-| Início | campo na barra mobile e busca do cabeçalho | Coleções (categorias), Rede | faixa de preço, NFT em destaque |
-| Mercado | no painel | Categorias, Rede, Criador | — |
-| Criadores | no painel | Categoria das obras, Rede blockchain, Coleção | — |
-
-Seleção múltipla combina por **OU dentro do grupo** e **E entre grupos**. Mercado e Criadores guardam o estado na URL (`q`, `categoria`, `rede`, `criador`/`colecao`, `ordenar`), como o Início. Faixa de preço fica só no Início porque Mercado e Criadores não possuem preço nos dados agregados.
-
-**Outras garantias de acessibilidade:** a contagem de resultados é uma região `role="status"`; checkboxes têm rótulo; imagens relevantes têm texto alternativo; skeletons respeitam `prefers-reduced-motion`; testes verificam ausência de overflow horizontal em 390, 768 e 1440 px.
+**Filtros.** Início, Mercado e Criadores compartilham `FilterPanel` e `FilterToolbar`. Os filtros combinam seleção por OU dentro de um grupo e E entre grupos. Busca, filtros e ordenação são refletidos na URL nas telas correspondentes.
 
 ## 9. Limitações, decisões de UX e desvios
 
-**Decisões de UX**
-- Mudança de preço/disponibilidade durante o checkout exige nova confirmação: a cotação antiga é rejeitada com `QUOTE_OUTDATED` e a interface pede revisão.
-- Mercado e Criadores existem como descoberta complementar (coleções e criadores agregados dos NFTs existentes). Não exibem métricas ou biografias que não estejam nos dados.
+### Decisões de UX
 
-**Desvios em relação ao enunciado/Figma**
-- **Fonte:** o nome da fonte do Figma não foi informado nos materiais. A interface usa Roboto, servida localmente por `@fontsource/roboto`, e a navbar usa DM Mono (`@fontsource/dm-mono`, também local). Se o Figma usar outra família, este é um desvio a ajustar.
-- **Assets de imagem:** as quatro artes usadas nos cards e nas páginas (250 × 250 px) foram convertidas de PNG para WebP (qualidade 85), de ≈ 110 kB para ≈ 10 kB cada, sem mudar dimensões nem composição. A troca é só de formato, feita por desempenho (ver [docs/AUDITORIA.md](./docs/AUDITORIA.md)); os PNGs originais deixaram de ser usados e foram removidos do projeto. O pacote contém as artes WebP em `public/nfts/`; compare a identidade de cada arquivo com o Figma antes da entrega, pois o ZIP não inclui um manifesto de exportação do Figma que permita comprovar um mapeamento de nomes de origem.
-- **Navbar e cards:** navbar fixa (`position: sticky`) com links centralizados e botão Entrar com ícone; o card de NFT tem um único bloco (fundo e borda) que envolve imagem, nome e preço.
-- **Telas adicionais e comportamento fora do escopo:** Mercado, Criadores, Coleções e Aprenda foram adicionados como navegação complementar. Aprenda apresenta conteúdo editorial estático e filtros locais, sem alegar integração externa. Suporte salva solicitações apenas no `localStorage` e informa explicitamente que elas não são enviadas a uma equipe. Ofertas apresenta o cupom de demonstração `KURIO10`; a validade só é confirmada quando ele é aplicado no carrinho. Interesse apresenta os favoritos reais do usuário e reutiliza um fluxo funcional obrigatório. Atividade e Downloads são páginas auxiliares sem backend de listagem; devem indicar claramente a ausência de dados/serviço, sem simular sucesso.
-- **Ajustes de acessibilidade em relação ao layout:** erros de formulário ligados aos campos (`aria-invalid`, `aria-describedby`, `role="alert"`), `aria-label` em campos dentro de `<label>`, foco controlado em diálogos e no drawer, feedback `role="status"` e `Toaster` para mutações, e *shimmer* desligado com movimento reduzido.
+- Mudanças de preço ou disponibilidade durante o checkout exigem nova confirmação.
+- Mercado, Criadores e Coleções são páginas complementares construídas a partir dos dados existentes.
+- O projeto usa Roboto e DM Mono locais porque os materiais do Figma não especificavam claramente a família tipográfica.
+- As artes dos NFTs foram convertidas para WebP para reduzir o tamanho dos arquivos.
 
-**Limitações conhecidas**
-- Dos componentes shadcn/ui, estão adaptados `Button`, `Dialog`, `Input`, `Label` e `Sonner`. Outros elementos (seletor de quantidade, `select` do pagamento, cards e checkboxes de filtro) são componentes próprios com Tailwind/CSS.
-- Atividade e Downloads (fora do escopo) são páginas de estado vazio, sem dados nem ações simuladas: a API só expõe `GET /orders/:orderId`, sem listagem de pedidos.
-- `transactionRef` do pedido reaproveita a chave de idempotência; a referência de transação é simulada.
-- O filtro de preço do mock compara com `Number()`; só a camada de mock é afetada (o cliente trata ETH como string).
-- **Hash de senha nas fixtures:** `passwordHash` é o literal curto `b9ead502` nos dois usuários de demonstração. É um marcador/hash fictício para simulação, não uma senha em claro nem um hash criptograficamente seguro. Não deve ser reutilizado em produção; autenticação real exige hashing de senhas apropriado com salt.
-- `src/index.css` é um arquivo único e extenso, com regras sobrepostas ao longo do desenvolvimento; as regras antigas `.market-filters`/`.creators-filters` não são mais usadas.
-- Performance mobile abaixo da meta (82 no Início e 84 no Detalhe contra 90): causa e medições em [docs/AUDITORIA.md](./docs/AUDITORIA.md).
-- Regressão visual: as baselines dependem de SO e fontes; gere-as no mesmo ambiente em que serão comparadas.
+### Páginas complementares e seus limites
+
+- **Mercado:** catálogo com busca, filtros e ordenação.
+- **Criadores:** lista e detalhes de criadores derivados dos NFTs; não apresenta biografias ou métricas indisponíveis nos dados.
+- **Coleções:** apresenta NFTs associados à coleção selecionada.
+- **Aprenda:** conteúdo editorial estático com filtros locais, sem integração externa.
+- **Ofertas:** apresenta o cupom demonstrativo `KURIO10`; sua validade é verificada quando aplicado no carrinho.
+- **Interesse:** apresenta os NFTs favoritados pelo usuário autenticado.
+- **Atividade:** página auxiliar em estado vazio, sem listagem de pedidos no backend mock.
+- **Downloads:** página auxiliar em estado vazio, sem serviço de downloads implementado.
+- **Suporte:** formulário demonstrativo que salva a solicitação no `localStorage`; não envia mensagens a uma equipe.
+
+### Limitações conhecidas
+
+- Os pagamentos, conexões de carteira e referências de transação são simulados.
+- Não há transações reais em blockchain nem conexão com carteiras reais.
+- Atividade e Downloads não possuem API de listagem implementada.
+- O mock usa dados locais e não representa um backend compartilhado em produção.
+- O marcador `passwordHash` nas fixtures é fictício e não deve ser utilizado em produção.
+- O CSS principal contém regras acumuladas durante o desenvolvimento.
+- A Performance mobile do Lighthouse ficou abaixo da meta de 90: 82 na Home e 84 no Detalhe. As medições e a análise estão em [docs/AUDITORIA.md](./docs/AUDITORIA.md).
+- As baselines de testes visuais podem variar conforme o sistema operacional e as fontes instaladas.
