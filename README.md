@@ -2,7 +2,7 @@
 
 Aplicação de demonstração de um marketplace de NFTs construída com React e TypeScript, baseada no desafio de frontend e no layout do [Figma](https://www.figma.com/design/Ff0SksUi7UFtPWUO8kyNtw/Frontend-Challenge?node-id=0-1).
 
-**Demo pública:** https://frontend-challenge-kappa-two.vercel.app/perfil  
+**Demo pública:** frontend-challenge-kappa-two.vercel.app
 **Repositório:** https://github.com/RafaelSM21/Frontend-Challenge
 
 O projeto implementa catálogo, busca e filtros, detalhe do NFT, favoritos, carrinho, checkout simulado, pedidos, conta do colecionador e atualizações em tempo real simuladas.
